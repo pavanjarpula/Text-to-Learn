@@ -6,6 +6,8 @@ import Home from "./pages/Home";
 import Course from "./pages/Course";
 import Lesson from "./pages/Lesson";
 import Navbar from "./components/Navbar";
+import PrivateRoute from "./components/PrivateRoute"; // ✅ import PrivateRoute
+import Profile from "./pages/Profile"; // Optional: create this page
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
@@ -23,15 +25,41 @@ const App = () => (
     <Router>
       <Navbar />
       <Routes>
+        {/* Public route */}
         <Route path="/" element={<Home />} />
-        <Route path="/course/:id" element={<Course />} />
-        <Route path="/lesson/:id" element={<Lesson />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/course/:id"
+          element={
+            <PrivateRoute>
+              <Course />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/lesson/:id"
+          element={
+            <PrivateRoute>
+              <Lesson />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </Router>
   </Auth0Provider>
 );
 
 export default App;
+
 
 
 

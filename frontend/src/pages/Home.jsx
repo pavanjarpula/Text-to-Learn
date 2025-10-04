@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react'; // ✅ import Auth0 hook
 import PromptForm from '../components/PromptForm';
 import CoursePreview from '../components/CoursePreview';
 import './Home.css';
 
 export default function Home() {
   const [course, setCourse] = useState(null);
+  const { loginWithRedirect, isAuthenticated, logout, user } = useAuth0(); // ✅ use Auth0 hook
 
   return (
     <div className="home-container">
@@ -13,8 +14,36 @@ export default function Home() {
       <nav className="navbar">
         <div className="navbar-left">📘 Text-to-Learn</div>
         <div className="navbar-right">
-          <Link to="/login" className="nav-btn">Login</Link>
-          <Link to="/signup" className="nav-btn">Signup</Link>
+          {isAuthenticated ? (
+            <>
+              <span className="nav-btn">Hello, {user?.nickname}</span> {/* ✅ username instead of email */}
+              <button
+                onClick={() => logout({ returnTo: window.location.origin })}
+                className="nav-btn"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => loginWithRedirect()} // ✅ login
+                className="nav-btn"
+              >
+                Login
+              </button>
+              <button
+                onClick={() =>
+                  loginWithRedirect({
+                    authorizationParams: { screen_hint: 'signup' }, // ✅ signup mode
+                  })
+                }
+                className="nav-btn"
+              >
+                Signup
+              </button>
+            </>
+          )}
         </div>
       </nav>
 

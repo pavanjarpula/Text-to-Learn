@@ -12,11 +12,23 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+
+// CORS setup to allow frontend origin and Authorization header
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000", // your frontend
+    allowedHeaders: ["Content-Type", "Authorization"], // allow Auth0 Bearer token
+  })
+);
+
+// Body parser
 app.use(express.json());
 
 // Routes
 app.use("/api/courses", courseRoutes);
+
+console.log("AUTH0_DOMAIN:", process.env.AUTH0_DOMAIN);
+console.log("AUTH0_AUDIENCE:", process.env.AUTH0_AUDIENCE);
 
 // Error Handling Middleware
 app.use(notFound);

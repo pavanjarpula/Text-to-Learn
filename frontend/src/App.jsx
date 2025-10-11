@@ -5,9 +5,12 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import Home from "./pages/Home";
 import Course from "./pages/Course";
 import Lesson from "./pages/Lesson";
+import Profile from "./pages/Profile";
 import Navbar from "./components/Navbar";
-import PrivateRoute from "./components/PrivateRoute"; // ✅ import PrivateRoute
-import Profile from "./pages/Profile"; // Optional: create this page
+import PrivateRoute from "./components/PrivateRoute";
+
+// ✅ Milestone 5/6 new page
+import CreateCourse from "./pages/CreateCourse";
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
@@ -25,23 +28,16 @@ const App = () => (
     <Router>
       <Navbar />
       <Routes>
-        {/* Public route */}
+        {/* ---------- Public Routes ---------- */}
         <Route path="/" element={<Home />} />
+        <Route path="/course/:id" element={<Course />} />
 
-        {/* Protected routes */}
+        {/* ---------- Protected Routes ---------- */}
         <Route
-          path="/course/:id"
+          path="/create"
           element={
             <PrivateRoute>
-              <Course />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/lesson/:id"
-          element={
-            <PrivateRoute>
-              <Lesson />
+              <CreateCourse />
             </PrivateRoute>
           }
         />
@@ -53,12 +49,22 @@ const App = () => (
             </PrivateRoute>
           }
         />
+        <Route
+          path="/lesson/:id"
+          element={
+            <PrivateRoute>
+              <Lesson />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </Router>
   </Auth0Provider>
 );
 
 export default App;
+
+
 
 
 

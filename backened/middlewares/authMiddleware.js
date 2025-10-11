@@ -1,5 +1,4 @@
-// backend/middlewares/authMiddleware.js
-require("dotenv").config(); // <-- add this at the very top
+require("dotenv").config();
 const { auth } = require("express-oauth2-jwt-bearer");
 
 if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_AUDIENCE) {
@@ -10,6 +9,7 @@ const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE,
   issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
   tokenSigningAlg: "RS256",
+  attachPayload: true,
 });
 
 module.exports = checkJwt;

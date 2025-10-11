@@ -1,34 +1,8 @@
 // src/utils/api.js
-import { getAccessTokenSilently } from "@auth0/auth0-react";
-
-/**
- * Helper to get full API URL.
- */
 const BASE_URL = "http://localhost:5000/api";
 
 /**
- * Generates a course from a text prompt (used in AI generation flow).
- */
-export const fetchResponse = async (prompt) => {
-  try {
-    const response = await fetch(`${BASE_URL}/courses/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic: prompt }),
-    });
-
-    if (!response.ok) throw new Error("Network response was not ok");
-
-    const data = await response.json();
-    return data; // Full course object
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-};
-
-/**
- * Generic helper for authenticated API requests using Auth0 token.
+ * Generic API request helper
  */
 export const apiRequest = async (
   endpoint,
@@ -43,12 +17,52 @@ export const apiRequest = async (
   if (body) options.body = JSON.stringify(body);
 
   const res = await fetch(`${BASE_URL}${endpoint}`, options);
-  if (!res.ok) throw new Error(`API ${method} ${endpoint} failed`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`API ${method} ${endpoint} failed: ${errorText}`);
+  }
   return res.json();
 };
 
 /**
- * Example usage:
- * const token = await getAccessTokenSilently();
- * const courses = await apiRequest("/courses/my", "GET", null, token);
+ * Generate course content from AI
  */
+export const fetchResponse = async (prompt) => {
+  try {
+    const res = await fetch(`${BASE_URL}/courses/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: prompt }),
+    });
+    if (!res.ok) throw new Error("Failed to generate course");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+};
+
+// --- COURSE ROUTES ---
+export const getAllCourses = () => apiRequest("/courses");
+export const getCourseById = (id) => apiRequest(`/courses/${id}`);
+export const getMyCourses = (token) =>
+  apiRequest("/courses/my", "GET", null, token);
+export const deleteCourseById = (id, token) =>
+  apiRequest(`/courses/${id}`, "DELETE", null, token);
+
+// --- MODULE ROUTES ---
+export const getModulesByCourse = (courseId) =>
+  apiRequest(`/modules/${courseId}/modules`);
+export const addModuleToCourse = (courseId, body, token) =>
+  apiRequest(`/modules/${courseId}/modules`, "POST", body, token);
+export const deleteModuleById = (moduleId, token) =>
+  apiRequest(`/modules/${moduleId}`, "DELETE", null, token);
+
+// --- LESSON ROUTES ---
+export const getLessonsByModule = (moduleId) =>
+  apiRequest(`/modules/${moduleId}/lessons`);
+export const getLessonById = (lessonId) => apiRequest(`/lessons/${lessonId}`);
+export const addLessonToModule = (moduleId, body, token) =>
+  apiRequest(`/lessons/${moduleId}`, "POST", body, token);
+export const deleteLessonById = (lessonId, token) =>
+  apiRequest(`/lessons/${lessonId}`, "DELETE", null, token);

@@ -94,6 +94,7 @@ exports.getUserCourses = async (req, res, next) => {
     const courses = await Course.find({ creator: userId }).select(
       "title description tags createdAt updatedAt"
     );
+
     res.json(courses);
   } catch (err) {
     next(err);

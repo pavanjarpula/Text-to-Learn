@@ -1,7 +1,7 @@
-// src/pages/Profile.jsx (or src/pages/MyCourses.jsx)
+// src/pages/Profile.jsx
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { apiRequest } from "../utils/api";
+import { getMyCourses, deleteCourseById } from "../utils/api";
 import CoursePreview from "../components/CoursePreview";
 import { useNavigate } from "react-router-dom";
 
@@ -11,12 +11,11 @@ const MyCourses = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // ✅ Fetch user's courses
   useEffect(() => {
     const loadCourses = async () => {
       try {
         const token = await getAccessTokenSilently();
-        const data = await apiRequest("/courses/my", "GET", null, token);
+        const data = await getMyCourses(token);
         setCourses(data);
       } catch (err) {
         console.error("Failed to load courses:", err);
@@ -27,12 +26,11 @@ const MyCourses = () => {
     loadCourses();
   }, [getAccessTokenSilently]);
 
-  // ✅ Handle delete
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this course?")) return;
     try {
       const token = await getAccessTokenSilently();
-      await apiRequest(`/courses/${id}`, "DELETE", null, token);
+      await deleteCourseById(id, token);
       setCourses((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
@@ -52,10 +50,7 @@ const MyCourses = () => {
             key={course._id}
             className="flex items-start justify-between border p-3 rounded"
           >
-            <div
-              onClick={() => navigate(`/course/${course._id}`)}
-              style={{ cursor: "pointer" }}
-            >
+            <div onClick={() => navigate(`/course/${course._id}`)} style={{ cursor: "pointer" }}>
               <CoursePreview course={course} />
             </div>
             <div className="flex flex-col gap-2">

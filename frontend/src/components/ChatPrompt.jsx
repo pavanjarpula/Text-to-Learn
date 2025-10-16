@@ -1,8 +1,8 @@
-// src/components/PromptForm.jsx
+// src/components/ChatPrompt.jsx
 import React, { useState } from "react";
-import { fetchResponse } from "../utils/api";
+import { generateCourseAI } from "../utils/api";
 
-const PromptForm = ({ onResult }) => {
+const ChatPrompt = ({ onResponse }) => {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,24 +15,23 @@ const PromptForm = ({ onResult }) => {
     setError(null);
 
     try {
-      const result = await fetchResponse(prompt);
-
+      const result = await generateCourseAI(prompt);
       if (!result) {
         setError("No course returned. Please try again.");
         return;
       }
 
-      if (onResult) onResult(result); // send full course object to Home
-      setPrompt(""); // clear input after submission
+      if (onResponse) onResponse(result);
+      setPrompt(""); // clear input
     } catch (err) {
       console.error(err);
-      setError("Error fetching response. Please try again.");
+      setError("Error fetching AI response. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Enter submits, Shift+Enter inserts newline
+  // Press Enter to submit, Shift+Enter for newline
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -65,7 +64,5 @@ const PromptForm = ({ onResult }) => {
   );
 };
 
-export default PromptForm;
-
-
+export default ChatPrompt;
 

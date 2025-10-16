@@ -4,51 +4,50 @@ const Lesson = require("../models/Lesson");
 const User = require("../models/user");
 
 /**
- * Create a new course (optionally with modules/lessons arrays)
+ * Create a new course with optional modules & lessons
  */
 exports.createCourse = async (req, res, next) => {
   try {
     const { title, description = "", tags = [], modules = [] } = req.body;
     if (!title) return res.status(400).json({ message: "Title required" });
 
-    // ✅ Ensure creator is taken from JWT
     const creatorSub = req.user?.sub || req.auth?.payload?.sub;
     if (!creatorSub) return res.status(401).json({ message: "Unauthorized" });
 
-    const course = new Course({
+    const course = await Course.create({
       title,
       description,
       creator: creatorSub,
       tags,
     });
-    await course.save();
 
-    // Attach to user document if storing users
+    // Add course to user
     await User.updateOne(
       { auth0Sub: creatorSub },
       { $addToSet: { courses: course._id } }
     );
 
     // Create modules and lessons if provided
-    for (const [index, modData] of (modules || []).entries()) {
-      const mod = new Module({
+    for (const [modIndex, modData] of (modules || []).entries()) {
+      const mod = await Module.create({
         title: modData.title,
         course: course._id,
-        order: index,
+        order: modIndex,
       });
-      await mod.save();
       course.modules.push(mod._id);
 
-      for (const [li, lessonData] of (modData.lessons || []).entries()) {
-        const lesson = new Lesson({
-          title: lessonData.title || `Lesson ${li + 1}`,
+      const lessons = (modData.lessons || []).map(
+        (lessonData, lessonIndex) => ({
+          title: lessonData.title || `Lesson ${lessonIndex + 1}`,
           objectives: lessonData.objectives || [],
           content: lessonData.content || [],
           module: mod._id,
-          order: li,
-        });
-        await lesson.save();
-      }
+          order: lessonIndex,
+        })
+      );
+      const createdLessons = await Lesson.insertMany(lessons);
+      mod.lessons = createdLessons.map((l) => l._id);
+      await mod.save();
     }
 
     await course.save();
@@ -60,40 +59,44 @@ exports.createCourse = async (req, res, next) => {
 };
 
 /**
- * Get a single course by ID (with modules and lessons)
+ * Get a single course with fully populated modules and lessons (including content)
  */
 exports.getCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
+
     const course = await Course.findById(id)
-      .lean()
       .populate({
         path: "modules",
-        options: { sort: { order: 1, createdAt: 1 } },
+        options: { sort: { order: 1 } },
         populate: {
           path: "lessons",
-          options: { sort: { order: 1, createdAt: 1 } },
+          options: { sort: { order: 1 } },
+          select: "title objectives content order", // Make sure content is included
         },
-      });
+      })
+      .lean(); // lean improves performance and returns plain JSON
 
     if (!course) return res.status(404).json({ message: "Course not found" });
+
     res.json(course);
   } catch (err) {
+    console.error("Get Course Error:", err);
     next(err);
   }
 };
 
 /**
- * Get all courses for logged-in user
+ * Get all courses of the logged-in user
  */
 exports.getUserCourses = async (req, res, next) => {
   try {
     const userId = req.user?.sub || req.auth?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const courses = await Course.find({ creator: userId }).select(
-      "title description tags createdAt updatedAt"
-    );
+    const courses = await Course.find({ creator: userId })
+      .select("title description tags createdAt updatedAt")
+      .lean();
 
     res.json(courses);
   } catch (err) {
@@ -102,13 +105,14 @@ exports.getUserCourses = async (req, res, next) => {
 };
 
 /**
- * Get all courses (public)
+ * Get all public courses
  */
 exports.getAllCourses = async (req, res, next) => {
   try {
-    const courses = await Course.find().select(
-      "title description tags createdAt updatedAt"
-    );
+    const courses = await Course.find()
+      .select("title description tags createdAt updatedAt")
+      .lean();
+
     res.json(courses);
   } catch (err) {
     next(err);
@@ -116,7 +120,7 @@ exports.getAllCourses = async (req, res, next) => {
 };
 
 /**
- * Delete a course by ID
+ * Delete a course
  */
 exports.deleteCourse = async (req, res, next) => {
   try {
@@ -127,14 +131,10 @@ exports.deleteCourse = async (req, res, next) => {
     const userId = req.user?.sub || req.auth?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    // Authorization check
-    if (course.creator !== userId) {
+    if (course.creator !== userId)
       return res.status(403).json({ message: "Not authorized" });
-    }
 
-    // ✅ Use deleteOne instead of remove
     await course.deleteOne();
-
     res.json({ message: "Course deleted" });
   } catch (err) {
     next(err);

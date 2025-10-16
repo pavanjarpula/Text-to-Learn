@@ -1,8 +1,7 @@
-// src/components/blocks/ParagraphBlock.jsx
-import React from "react";
+import React from 'react';
 
-const ParagraphBlock = ({ text }) => {
-  return <p className="leading-relaxed text-base whitespace-pre-wrap">{text}</p>;
-};
+const ParagraphBlock = ({ text }) => (
+    <p className="text-lg leading-relaxed text-gray-700 my-4">{text}</p>
+);
 
 export default ParagraphBlock;

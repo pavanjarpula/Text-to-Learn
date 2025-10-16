@@ -25,11 +25,11 @@ export const apiRequest = async (
 };
 
 /**
- * Generate course content from AI
+ * 🧠 Generate structured course content using AI
  */
-export const fetchResponse = async (prompt) => {
+export const generateCourseAI = async (prompt) => {
   try {
-    const res = await fetch(`${BASE_URL}/courses/generate`, {
+    const res = await fetch(`${BASE_URL}/ai/generate-course`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic: prompt }),
@@ -37,7 +37,7 @@ export const fetchResponse = async (prompt) => {
     if (!res.ok) throw new Error("Failed to generate course");
     return await res.json();
   } catch (err) {
-    console.error(err);
+    console.error("AI generation error:", err);
     return null;
   }
 };

@@ -1,35 +1,14 @@
-// src/components/blocks/VideoBlock.jsx
-import React from "react";
+import React from 'react';
 
-/**
- * video block expects either:
- *  - { type: "video", url: "https://www.youtube.com/embed/..." }
- *  - or { type: "video", query: "search terms" } (then show placeholder or query text)
- *
- * For full YouTube lookup see Milestone 9 (backend proxy for YouTube API)
- */
-const VideoBlock = ({ url, query }) => {
-  if (url) {
-    return (
-      <div className="video-block my-4">
-        <div className="aspect-w-16 aspect-h-9">
-          <iframe
-            title="lesson-video"
-            src={url}
-            frameBorder="0"
-            allowFullScreen
-            className="w-full h-64"
-          />
+const VideoBlock = ({ url }) => (
+    <div className="my-6 p-4 bg-gray-100 rounded-xl shadow-inner flex flex-col items-center">
+        <h3 className="text-xl font-semibold mb-3 text-blue-600">Video Resource</h3>
+        <p className="text-gray-600 italic">Search query: "{url}"</p>
+        <div className="w-full max-w-lg h-64 bg-gray-300 rounded-lg flex items-center justify-center mt-3">
+            <p className="text-gray-500">Video Placeholder: Search for "{url}"</p>
         </div>
-      </div>
-    );
-  }
-  return (
-    <div className="video-placeholder p-3 border rounded">
-      <div className="font-semibold">Video</div>
-      <div className="text-sm text-gray-600">{query || "Video query not provided"}</div>
+        <p className="text-xs mt-2 text-gray-400">Note: External video embedding requires a dedicated search and embed logic.</p>
     </div>
-  );
-};
+);
 
 export default VideoBlock;

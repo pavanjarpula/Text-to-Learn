@@ -10,7 +10,7 @@ import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 
 // ✅ Milestone 5/6 new page
-import CreateCourse from "./pages/CreateCourse";
+
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
@@ -32,15 +32,7 @@ const App = () => (
         <Route path="/" element={<Home />} />
         <Route path="/course/:id" element={<Course />} />
 
-        {/* ---------- Protected Routes ---------- */}
-        <Route
-          path="/create"
-          element={
-            <PrivateRoute>
-              <CreateCourse />
-            </PrivateRoute>
-          }
-        />
+
         <Route
           path="/profile"
           element={
@@ -63,6 +55,7 @@ const App = () => (
 );
 
 export default App;
+
 
 
 

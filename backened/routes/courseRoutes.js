@@ -7,6 +7,11 @@ const {
   deleteCourse,
 } = require("../controllers/courseController");
 
+const {
+  generateCourseHandler,
+  generateLessonHandler,
+} = require("../controllers/aiController");
+
 const checkJwt = require("../middlewares/authMiddleware"); // default export
 const attachUser = require("../middlewares/attachUser");
 
@@ -17,18 +22,12 @@ router.get("/my", checkJwt, attachUser, getUserCourses); // ✅ must come before
 router.post("/", checkJwt, attachUser, createCourse);
 router.delete("/:id", checkJwt, attachUser, deleteCourse);
 
-/*router.delete(
-  "/:id",
-  (req, res, next) => {
-    console.log("INCOMING DELETE HEADERS:", req.headers);
-    next();
-  },
-  checkJwt,
-  deleteCourse
-);*/
+// 🧠 AI Course generation routes (protected)
+router.post("/generate", checkJwt, attachUser, generateCourseHandler);
+router.post("/generate-lesson", checkJwt, attachUser, generateLessonHandler);
 
 // 🌍 Public routes
 router.get("/", getAllCourses);
-router.get("/:id", getCourse);
+router.get("/:id", getCourse); // Returns course with modules populated if you want
 
 module.exports = router;

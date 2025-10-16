@@ -44,8 +44,20 @@ exports.addLesson = async (req, res, next) => {
 exports.getLesson = async (req, res, next) => {
   try {
     const { lessonId } = req.params;
-    const lesson = await Lesson.findById(lessonId).lean();
+
+    // 🏆 CRITICAL FIX: Populate the module and select the course field from it
+    const lesson = await Lesson.findById(lessonId)
+      .select("title objectives content module isEnriched")
+      .populate({
+        path: "module",
+        select: "course", // We only need the course ID from the module
+      })
+      .lean();
+
     if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    // The 'content' array (which is an array of mixed types) will be included in the response.
+    // The lesson object now looks like: {..., module: { _id: 'moduleId', course: 'courseId' }}
     res.json(lesson);
   } catch (err) {
     next(err);

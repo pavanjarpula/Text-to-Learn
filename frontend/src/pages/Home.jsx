@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import React, { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import PromptFormGenerate from "../components/PromptFormGenerate";
+import ChatPrompt from "../components/ChatPrompt";
 import CoursePreview from "../components/CoursePreview";
 import "./Home.css";
 
@@ -9,7 +9,7 @@ const Home = () => {
   const [course, setCourse] = useState(null);
   const { isAuthenticated, loginWithRedirect } = useAuth0();
 
-  const handleCourseGenerated = (generatedCourse) => {
+  const handleAIResponse = (generatedCourse) => {
     setCourse(generatedCourse);
   };
 
@@ -17,13 +17,13 @@ const Home = () => {
     <div className="home-container">
       {/* Header */}
       <header className="home-header">
-        <h1>Welcome to Pavan's Text-to-Learn App</h1>
-        <p>Simplify self-learning with instantly generated structured courses.</p>
+        <h1>Welcome to Text-to-Learn</h1>
+        <p>Type a topic and instantly generate a structured course powered by AI.</p>
       </header>
 
       {/* Prompt input */}
       <div className="prompt-bar-center">
-        <PromptFormGenerate onResult={handleCourseGenerated} />
+        <ChatPrompt onResponse={handleAIResponse} />
       </div>
 
       {/* Show preview */}
@@ -56,4 +56,5 @@ const Home = () => {
 };
 
 export default Home;
+
 

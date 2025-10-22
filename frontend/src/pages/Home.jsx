@@ -1,194 +1,150 @@
-import React, { useState, useRef } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
-import { useOutletContext } from "react-router-dom";
-import { Sparkles, Loader } from "lucide-react";
-import ChatPrompt from "../components/ChatPrompt";
-import CoursePreview from "../components/CoursePreview";
-import "./Home.css";
+import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { Sparkles, Loader, Save, Check } from 'lucide-react';
+import ChatPrompt from '../components/ChatPrompt';
+import CoursePreview from '../components/CoursePreview';
+import LessonRenderer from '../components/LessonRenderer';
+import { saveCourse } from '../utils/api';
+import './Home.css';
 
-const Home = () => {
-  const [course, setCourse] = useState(null);
+const Home = ({
+  activeCourse,
+  activeLesson,
+  onCourseGenerated,
+  onSaveCourse,
+  onSelectLesson,
+  onBackToCourse,
+  onNewCourse,
+}) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
-  const contentRef = useRef(null);
-  const { isAuthenticated, loginWithRedirect } = useAuth0();
-  
-  // Get context from Layout if needed
-  const outletContext = useOutletContext();
+  const [saved, setSaved] = useState(false);
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
 
   const handleAIResponse = (generatedCourse) => {
-    console.log("========== HOME: Course Received ==========");
-    console.log("Full course object:", generatedCourse);
-    console.log("Title:", generatedCourse?.title);
-    console.log("Description:", generatedCourse?.description);
-    console.log("Modules count:", generatedCourse?.modules?.length);
-    
-    if (generatedCourse?.modules?.length > 0) {
-      console.log("First module:", generatedCourse.modules[0]);
-      console.log("First module lessons:", generatedCourse.modules[0].lessons?.length);
-      if (generatedCourse.modules[0].lessons?.length > 0) {
-        console.log("First lesson:", generatedCourse.modules[0].lessons[0]);
-      }
+    console.log('Course generated:', generatedCourse);
+    onCourseGenerated(generatedCourse);
+    setIsGenerating(false);
+    setSaved(false);
+  };
+
+  const handleSaveCourse = async () => {
+    if (!isAuthenticated) {
+      alert('Please login to save courses');
+      return;
     }
-    console.log("=========================================");
 
-    setCourse(generatedCourse);
-    setIsGenerating(false);
-    setError(null);
-    
-    // Smooth scroll to content
-    setTimeout(() => {
-      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 200);
+    if (!activeCourse) return;
+
+    try {
+      const token = await getAccessTokenSilently();
+      await saveCourse(activeCourse, token);
+      onSaveCourse(activeCourse);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save course:', err);
+      alert('Failed to save course');
+    }
   };
 
-  const handleGenerationStart = () => {
-    console.log("Generation started");
-    setIsGenerating(true);
-    setError(null);
-  };
+  // Show lesson content when lesson is selected
+  if (activeLesson) {
+    return (
+      <div className="home-lesson-view">
+        <LessonRenderer
+          lesson={activeLesson}
+          course={activeCourse}
+          onBack={onBackToCourse}
+        />
+      </div>
+    );
+  }
 
-  const handleGenerationError = (errorMsg) => {
-    console.error("Generation error in Home:", errorMsg);
-    setError(errorMsg);
-    setIsGenerating(false);
-  };
+  // Show course preview when course is generated
+  if (activeCourse) {
+    return (
+      <div className="home-course-view">
+        <div className="course-actions">
+          <button onClick={onNewCourse} className="new-course-action-btn">
+            ✕ New Course
+          </button>
+          {isAuthenticated && (
+            <button
+              onClick={handleSaveCourse}
+              className="save-course-btn"
+              disabled={saved}
+            >
+              {saved ? (
+                <>
+                  <Check size={18} />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Save Course
+                </>
+              )}
+            </button>
+          )}
+        </div>
+        <CoursePreview
+          course={activeCourse}
+          onLessonSelect={onSelectLesson}
+        />
+      </div>
+    );
+  }
 
-  const handleClearCourse = () => {
-    setCourse(null);
-    setError(null);
-  };
-
+  // Show home page with prompt
   return (
     <div className="home-container">
-      {/* Hero Header Section */}
+      {/* Header */}
       <header className="home-header">
-        <div className="header-content">
-          <div className="header-badge">
-            <Sparkles size={16} />
-            <span>AI-Powered Learning</span>
-          </div>
-          <h1 className="home-title">
-            Generate Your Perfect Course in Seconds
-          </h1>
-          <p className="home-subtitle">
-            Simply describe what you want to learn. Our AI creates a structured, 
-            personalized course with modules, lessons, and resources—instantly.
-          </p>
+        <div className="header-badge">
+          <Sparkles size={16} />
+          <span>AI-Powered Learning</span>
         </div>
+        <h1 className="home-title">Generate Your Perfect Course</h1>
+        <p className="home-subtitle">
+          Describe what you want to learn, and our AI creates a structured course with modules and lessons.
+        </p>
       </header>
 
-      {/* Prompt Input Section - Fixed Position */}
-      <section className="prompt-section">
-        <div className="prompt-wrapper">
-          <ChatPrompt 
-            onResponse={handleAIResponse}
-            onGenerationStart={handleGenerationStart}
-            onError={handleGenerationError}
-            isGenerating={isGenerating}
-          />
-        </div>
+      {/* Prompt Section */}
+      <section className="home-prompt-section">
+        <ChatPrompt
+          onResponse={handleAIResponse}
+          onGenerationStart={() => setIsGenerating(true)}
+          onError={(err) => setError(err)}
+          isGenerating={isGenerating}
+        />
       </section>
 
-      {/* Main Content Area */}
-      <main className="main-content" ref={contentRef}>
-        {/* Error Display */}
-        {error && (
-          <div className="error-banner">
-            <div className="error-content">
-              <span className="error-icon">⚠️</span>
-              <div>
-                <p className="error-title">Generation Failed</p>
-                <p className="error-message">{error}</p>
-              </div>
-              <button 
-                onClick={() => setError(null)}
-                className="error-close"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Loading State */}
+      {isGenerating && (
+        <div className="home-loading">
+          <Loader size={48} className="spinner" />
+          <h3>Creating Your Course</h3>
+          <p>Generating modules, lessons, and content...</p>
+        </div>
+      )}
 
-        {/* Loading State */}
-        {isGenerating && (
-          <div className="loading-container">
-            <div className="loading-spinner">
-              <Loader size={48} className="spinner-icon" />
-            </div>
-            <h3 className="loading-title">Creating Your Course</h3>
-            <p className="loading-text">
-              Our AI is generating modules, lessons, and resources...
-            </p>
-            <div className="loading-progress">
-              <div className="progress-bar"></div>
-            </div>
-          </div>
-        )}
+      {/* Error State */}
+      {error && (
+        <div className="home-error">
+          <p>{error}</p>
+          <button onClick={() => setError(null)}>Dismiss</button>
+        </div>
+      )}
 
-        {/* Course Preview */}
-        {!isGenerating && course && (
-          <div className="course-container">
-            <div className="course-header-action">
-              <button 
-                onClick={handleClearCourse}
-                className="new-course-btn"
-              >
-                ✕ Create New Course
-              </button>
-            </div>
-            <CoursePreview course={course} />
-          </div>
-        )}
-
-        {/* Empty State / Placeholder */}
-        {!isGenerating && !course && (
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <Sparkles size={64} />
-            </div>
-            <h2 className="empty-state-title">Ready to Learn Something New?</h2>
-            <p className="empty-state-text">
-              Enter a topic above to generate a complete, AI-powered course tailored to you.
-            </p>
-            <div className="empty-state-divider"></div>
-            <div className="empty-state-hints">
-              <div className="hint">
-                <span className="hint-icon">📚</span>
-                <span>Try: "Introduction to React Hooks"</span>
-              </div>
-              <div className="hint">
-                <span className="hint-icon">🔬</span>
-                <span>Try: "Basics of Machine Learning"</span>
-              </div>
-              <div className="hint">
-                <span className="hint-icon">💡</span>
-                <span>Try: "Web3 and Blockchain Essentials"</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Unauthenticated User Banner */}
-      {!isAuthenticated && !isGenerating && (
-        <div className="auth-banner">
-          <div className="auth-banner-content">
-            <span className="auth-banner-icon">🔐</span>
-            <div className="auth-banner-text">
-              <p className="auth-banner-title">Save Your Progress</p>
-              <p className="auth-banner-description">
-                Sign in to save courses and track your learning journey
-              </p>
-            </div>
-            <button 
-              onClick={() => loginWithRedirect()}
-              className="auth-banner-btn"
-            >
-              Sign In Now
-            </button>
-          </div>
+      {/* Empty State */}
+      {!isGenerating && !error && (
+        <div className="home-empty-state">
+          <Sparkles size={64} />
+          <h2>Ready to Learn Something New?</h2>
+          <p>Enter a topic above to generate your personalized course</p>
         </div>
       )}
     </div>
@@ -196,5 +152,6 @@ const Home = () => {
 };
 
 export default Home;
+
 
 

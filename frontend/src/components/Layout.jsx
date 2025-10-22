@@ -1,37 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-import './Layout.css';
 
-const Layout = () => {
-  const [selectedLesson, setSelectedLesson] = useState(null);
-
-  const handleSelectLesson = (lesson) => {
-    setSelectedLesson(lesson);
-  };
-
-  const handleBackToCourse = () => {
-    setSelectedLesson(null);
-  };
-
+const Layout = ({
+  courses,
+  activeCourse,
+  activeLesson,
+  onSelectCourse,
+  onSelectLesson,
+  onDeleteCourse,
+}) => {
   return (
-    <div className="layout-container">
+    <div className="app-layout">
       {/* Fixed Navbar */}
-      <header className="layout-header">
-        <Navbar />
-      </header>
+      <Navbar />
 
-      {/* Main Layout with Sidebar */}
-      <div className="layout-main">
+      {/* Main Container */}
+      <div className="app-container">
         {/* Sidebar */}
-        <aside className="layout-sidebar">
-          <Sidebar onSelectLesson={handleSelectLesson} />
-        </aside>
+        <Sidebar
+          courses={courses}
+          activeCourse={activeCourse}
+          activeLesson={activeLesson}
+          onSelectCourse={onSelectCourse}
+          onSelectLesson={onSelectLesson}
+          onDeleteCourse={onDeleteCourse}
+        />
 
         {/* Main Content */}
-        <main className="layout-content">
-          <Outlet context={{ selectedLesson, onSelectLesson: handleSelectLesson, onBackToCourse: handleBackToCourse }} />
+        <main className="app-main-content">
+          <Outlet />
         </main>
       </div>
     </div>
@@ -39,3 +38,5 @@ const Layout = () => {
 };
 
 export default Layout;
+
+

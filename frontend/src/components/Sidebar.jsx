@@ -1,174 +1,117 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Home, LogOut, Settings, Trash2, ChevronLeft, ChevronRight, MessageCircle, BookOpen } from 'lucide-react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { ChevronDown, Plus, MessageCircle, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
-const Sidebar = ({ onSelectLesson }) => {
-  const [isOpen, setIsOpen] = useState(true);
-  const [expandedCourse, setExpandedCourse] = useState(null);
-  const [expandedModule, setExpandedModule] = useState(null);
-  const [courses, setCourses] = useState([]);
-  const { isAuthenticated, logout } = useAuth0();
+const Sidebar = ({
+  courses,
+  activeCourse,
+  activeLesson,
+  onSelectCourse,
+  onSelectLesson,
+  onDeleteCourse,
+}) => {
+  const [expandedCourse, setExpandedCourse] = useState(activeCourse?._id);
+  const [expandedModules, setExpandedModules] = useState({});
+  const navigate = useNavigate();
 
-  const toggleCourseExpand = (courseId) => {
+  const toggleCourse = (courseId) => {
     setExpandedCourse(expandedCourse === courseId ? null : courseId);
   };
 
-  const toggleModuleExpand = (moduleId) => {
-    setExpandedModule(expandedModule === moduleId ? null : moduleId);
+  const toggleModule = (moduleId) => {
+    setExpandedModules(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
   };
 
-  const handleNewChat = () => {
-    // Clear state or redirect to home
-    setExpandedCourse(null);
-    setExpandedModule(null);
-  };
-
-  const handleDeleteCourse = (courseId) => {
-    setCourses(courses.filter(c => c._id !== courseId));
+  const handleNewCourse = () => {
+    navigate('/');
+    onSelectCourse(null);
   };
 
   return (
-    <>
-      {/* Mobile Toggle */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="sidebar-toggle"
-      >
-        {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-      </button>
-
-      {/* Mobile Overlay */}
-      {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />}
-
-      {/* Sidebar Container */}
-      <aside className={`sidebar-container ${isOpen ? 'open' : 'closed'}`}>
-        
-        {/* New Course Button */}
-        {isAuthenticated && (
-          <div className="sidebar-header">
-            <button
-              onClick={handleNewChat}
-              className="sidebar-new-btn"
-            >
-              <Plus size={18} />
-              <span>New Course</span>
-            </button>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <nav className="sidebar-nav">
-          <NavItem icon={<Home size={18} />} label="Home" />
-          {isAuthenticated && (
-            <NavItem icon={<BookOpen size={18} />} label="Saved Courses" />
-          )}
-        </nav>
-
-        {/* Courses Section */}
-        {isAuthenticated && (
-          <div className="sidebar-courses-section">
-            <div className="sidebar-section-header">
-              <MessageCircle size={14} />
-              <span>Recent Courses</span>
-            </div>
-
-            {/* Courses List */}
-            <div className="sidebar-courses-list">
-              {courses && courses.length > 0 ? (
-                courses.map((course) => (
-                  <CourseItem
-                    key={course._id}
-                    course={course}
-                    isExpanded={expandedCourse === course._id}
-                    onToggleExpand={() => toggleCourseExpand(course._id)}
-                    onDelete={() => handleDeleteCourse(course._id)}
-                    expandedModule={expandedModule}
-                    onToggleModule={() => toggleModuleExpand(expandedModule === course._id ? null : course._id)}
-                    onSelectLesson={onSelectLesson}
-                  />
-                ))
-              ) : (
-                <div className="sidebar-empty">
-                  <MessageCircle size={24} />
-                  <p>No courses yet</p>
-                  <p>Create one to get started!</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Bottom Section */}
-        {isAuthenticated && (
-          <div className="sidebar-footer">
-            <NavItem icon={<Settings size={18} />} label="Settings" />
-            <button
-              onClick={() => logout({ returnTo: window.location.origin })}
-              className="sidebar-logout-btn"
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
-      </aside>
-    </>
-  );
-};
-
-// Course Item Component
-const CourseItem = ({
-  course,
-  isExpanded,
-  onToggleExpand,
-  onDelete,
-  expandedModule,
-  onToggleModule,
-  onSelectLesson,
-}) => {
-  return (
-    <div className="sidebar-course-item">
-      <div className="sidebar-course-header">
-        {course.modules && course.modules.length > 0 && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand();
-            }}
-            className="sidebar-expand-btn"
-          >
-            <ChevronDown
-              size={14}
-              className={isExpanded ? 'expanded' : ''}
-            />
-          </button>
-        )}
-
-        <button className="sidebar-course-title">
-          {course.title}
-        </button>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="sidebar-delete-btn"
-        >
-          <Trash2 size={14} />
+    <aside className="sidebar">
+      {/* New Course Button */}
+      <div className="sidebar-header">
+        <button onClick={handleNewCourse} className="new-course-btn">
+          <Plus size={20} />
+          <span>New Course</span>
         </button>
       </div>
 
-      {/* Modules */}
-      {isExpanded && course.modules && course.modules.length > 0 && (
-        <div className="sidebar-modules">
-          {course.modules.map((module) => (
+      {/* Courses List */}
+      <div className="sidebar-content">
+        {courses.length === 0 ? (
+          <div className="sidebar-empty">
+            <MessageCircle size={32} />
+            <p>No courses yet</p>
+            <span>Generate your first course!</span>
+          </div>
+        ) : (
+          <div className="sidebar-courses">
+            {courses.map((course) => (
+              <CourseItem
+                key={course._id}
+                course={course}
+                isActive={activeCourse?._id === course._id}
+                isExpanded={expandedCourse === course._id}
+                expandedModules={expandedModules}
+                activeLesson={activeLesson}
+                onToggleCourse={() => toggleCourse(course._id)}
+                onToggleModule={toggleModule}
+                onSelectCourse={() => onSelectCourse(course)}
+                onSelectLesson={onSelectLesson}
+                onDelete={() => onDeleteCourse(course._id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+};
+
+const CourseItem = ({
+  course,
+  isActive,
+  isExpanded,
+  expandedModules,
+  activeLesson,
+  onToggleCourse,
+  onToggleModule,
+  onSelectCourse,
+  onSelectLesson,
+  onDelete,
+}) => {
+  return (
+    <div className={`course-item ${isActive ? 'active' : ''}`}>
+      <div className="course-header">
+        <button onClick={onToggleCourse} className="course-expand-btn">
+          <ChevronDown
+            size={16}
+            className={isExpanded ? 'rotated' : ''}
+          />
+        </button>
+        <button onClick={onSelectCourse} className="course-title">
+          {course.title}
+        </button>
+        <button onClick={onDelete} className="course-delete-btn">
+          <X size={16} />
+        </button>
+      </div>
+
+      {isExpanded && course.modules && (
+        <div className="modules-list">
+          {course.modules.map((module, idx) => (
             <ModuleItem
               key={module._id}
               module={module}
-              isExpanded={expandedModule === module._id}
-              onToggleExpand={() => onToggleModule()}
+              moduleIndex={idx}
+              isExpanded={expandedModules[module._id]}
+              activeLesson={activeLesson}
+              onToggle={() => onToggleModule(module._id)}
               onSelectLesson={onSelectLesson}
             />
           ))}
@@ -178,29 +121,34 @@ const CourseItem = ({
   );
 };
 
-// Module Item Component
-const ModuleItem = ({ module, isExpanded, onToggleExpand, onSelectLesson }) => {
+const ModuleItem = ({
+  module,
+  moduleIndex,
+  isExpanded,
+  activeLesson,
+  onToggle,
+  onSelectLesson,
+}) => {
   return (
-    <div className="sidebar-module-item">
-      <button
-        onClick={onToggleExpand}
-        className="sidebar-module-header"
-      >
+    <div className="module-item">
+      <button onClick={onToggle} className="module-header">
         <ChevronDown
-          size={12}
-          className={isExpanded ? 'expanded' : ''}
+          size={14}
+          className={isExpanded ? 'rotated' : ''}
         />
-        <span>{module.title}</span>
+        <span className="module-number">{String(moduleIndex + 1).padStart(2, '0')}</span>
+        <span className="module-title">{module.title}</span>
       </button>
 
-      {/* Lessons */}
-      {isExpanded && module.lessons && module.lessons.length > 0 && (
-        <div className="sidebar-lessons">
+      {isExpanded && module.lessons && (
+        <div className="lessons-list">
           {module.lessons.map((lesson, idx) => (
             <button
               key={lesson._id}
               onClick={() => onSelectLesson(lesson)}
-              className="sidebar-lesson-item"
+              className={`lesson-item ${
+                activeLesson?._id === lesson._id ? 'active' : ''
+              }`}
             >
               <span className="lesson-number">{idx + 1}</span>
               <span className="lesson-title">{lesson.title}</span>
@@ -211,13 +159,5 @@ const ModuleItem = ({ module, isExpanded, onToggleExpand, onSelectLesson }) => {
     </div>
   );
 };
-
-// Nav Item Component
-const NavItem = ({ icon, label }) => (
-  <button className="sidebar-nav-item">
-    {icon}
-    <span>{label}</span>
-  </button>
-);
 
 export default Sidebar;

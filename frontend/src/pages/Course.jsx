@@ -1,73 +1,129 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getCourseById } from "../utils/api";
+import React, { useState } from "react";
+import { ArrowLeft, BookOpen, Clock, Zap } from "lucide-react";
+import CoursePreview from "../components/CoursePreview";
 import LessonRenderer from "../components/LessonRenderer";
+import "./Course.css";
 
-const CoursePage = () => {
-  const { id } = useParams(); // courseId
-  const [course, setCourse] = useState(null);
+const CoursePage = ({ course = null, onBack }) => {
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [selectedModule, setSelectedModule] = useState(null);
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        const data = await getCourseById(id);
-        setCourse(data);
-      } catch (err) {
-        console.error("❌ Error fetching course:", err);
-      }
-    };
-    fetchCourse();
-  }, [id]);
-
-  if (!course) return <div className="p-6">Loading course...</div>;
-
-  return (
-    <div className="p-6 space-y-6">
-      <Link to="/" className="text-sm text-blue-600 hover:underline">
-        ← Back to Courses
-      </Link>
-
-      <h1 className="text-3xl font-bold">{course.title}</h1>
-      <p className="text-gray-700">{course.description}</p>
-
-      {course.modules?.length > 0 ? (
-        <div className="space-y-8">
-          {course.modules.map((mod, idx) => (
-            <div
-              key={mod._id}
-              className="p-4 border rounded-lg shadow-md bg-white"
-            >
-              <h2 className="text-xl font-semibold mb-2">
-                {idx + 1}. {mod.title}
-              </h2>
-
-              {mod.lessons?.length > 0 ? (
-                <div className="ml-6 space-y-6">
-                  {mod.lessons.map((lesson) => (
-                    <div key={lesson._id} className="p-3 border rounded-md bg-gray-50">
-                      <h3 className="text-lg font-medium mb-2">{lesson.title}</h3>
-                      {lesson.content?.length > 0 ? (
-                        <LessonRenderer content={lesson.content} />
-                      ) : (
-                        <p className="text-gray-500">No content available.</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="ml-6 text-gray-500">No lessons found.</p>
-              )}
-            </div>
-          ))}
+  if (!course) {
+    return (
+      <div className="course-page-empty">
+        <div className="empty-state">
+          <BookOpen size={64} />
+          <h2>No Course Selected</h2>
+          <p>Select a course from the sidebar or generate a new one</p>
+          <button onClick={onBack} className="back-to-home-btn">
+            <ArrowLeft size={18} />
+            Back to Home
+          </button>
         </div>
-      ) : (
-        <p>No modules found.</p>
-      )}
+      </div>
+    );
+  }
+
+  const handleLessonSelect = (data) => {
+    setSelectedLesson(data.lesson);
+    setSelectedModule(data.module);
+  };
+
+  const handleBackToCourse = () => {
+    setSelectedLesson(null);
+    setSelectedModule(null);
+  };
+
+  const handleNextLesson = () => {
+    if (!selectedModule || !selectedLesson) return;
+    
+    const currentLessonIndex = selectedModule.lessons?.findIndex(
+      (l) => l._id === selectedLesson._id
+    );
+    
+    if (currentLessonIndex !== undefined && currentLessonIndex < selectedModule.lessons.length - 1) {
+      const nextLesson = selectedModule.lessons[currentLessonIndex + 1];
+      setSelectedLesson(nextLesson);
+    }
+  };
+
+  const handlePreviousLesson = () => {
+    if (!selectedModule || !selectedLesson) return;
+    
+    const currentLessonIndex = selectedModule.lessons?.findIndex(
+      (l) => l._id === selectedLesson._id
+    );
+    
+    if (currentLessonIndex !== undefined && currentLessonIndex > 0) {
+      const prevLesson = selectedModule.lessons[currentLessonIndex - 1];
+      setSelectedLesson(prevLesson);
+    }
+  };
+
+  // If lesson is selected, show lesson renderer
+  if (selectedLesson) {
+    return (
+      <div className="course-page-container">
+        <button onClick={handleBackToCourse} className="back-to-course-btn">
+          <ArrowLeft size={18} />
+          <span>Back to Course Overview</span>
+        </button>
+
+        <LessonRenderer
+          lesson={selectedLesson}
+          module={selectedModule}
+          course={course}
+          moduleIdx={course.modules?.findIndex(m => m._id === selectedModule._id) || 0}
+          lessonIdx={selectedModule.lessons?.findIndex(l => l._id === selectedLesson._id) || 0}
+          onPrevious={handlePreviousLesson}
+          onNext={handleNextLesson}
+          objectives={selectedLesson.objectives || []}
+          content={selectedLesson.content || []}
+        />
+      </div>
+    );
+  }
+
+  // Otherwise show course preview
+  return (
+    <div className="course-page-container">
+      <div className="course-page-header-bar">
+        <button onClick={onBack} className="back-to-home-btn-small">
+          <ArrowLeft size={18} />
+          <span>Home</span>
+        </button>
+        
+        <div className="course-page-stats">
+          <div className="stat">
+            <BookOpen size={16} />
+            <span>{course.modules?.length || 0} Modules</span>
+          </div>
+          <div className="stat">
+            <Clock size={16} />
+            <span>
+              {course.modules?.reduce((sum, m) => sum + (m.lessons?.length || 0), 0) || 0} Lessons
+            </span>
+          </div>
+          <div className="stat">
+            <Zap size={16} />
+            <span>AI Generated</span>
+          </div>
+        </div>
+      </div>
+
+      <CoursePreview 
+        course={course} 
+        onLessonSelect={handleLessonSelect}
+      />
     </div>
   );
 };
 
 export default CoursePage;
+
+
+
+
 
 
 

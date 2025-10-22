@@ -1,65 +1,119 @@
 import React, { useState } from "react";
-import { HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { HelpCircle, CheckCircle, XCircle } from "lucide-react";
+import "./MCQBlock.css";
 
-const MCQBlock = ({ question, options, answer, explanation }) => {
-    const [selected, setSelected] = useState(null);
-    const [showExplanation, setShowExplanation] = useState(false);
+const MCQBlock = ({ 
+  question = "", 
+  options = [], 
+  answer = null,
+  explanation = "" 
+}) => {
+  const [selected, setSelected] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [answered, setAnswered] = useState(false);
 
-    const isCorrect = (index) => index === answer;
-    
-    // Convert 0-indexed answer to A, B, C...
-    const correctLetter = String.fromCharCode(65 + answer);
+  const isCorrect = (index) => index === answer;
+  const correctLetter = String.fromCharCode(65 + (answer || 0));
 
-    return (
-        <div className="border border-blue-200 p-6 rounded-xl bg-white shadow-xl">
-            <h4 className="text-xl font-bold mb-4 text-gray-800 flex items-start">
-                <HelpCircle className="w-6 h-6 mr-3 text-blue-500 flex-shrink-0 mt-1" />
-                {question}
-            </h4>
-            <div className="space-y-3">
-                {options.map((option, index) => {
-                    const isSelected = selected === index;
-                    const statusClass = isSelected 
-                        ? (isCorrect(index) ? "bg-green-100 border-green-500" : "bg-red-100 border-red-500")
-                        : "bg-gray-50 hover:bg-gray-100 border-gray-200";
+  const handleSelectOption = (index) => {
+    if (!answered) {
+      setSelected(index);
+      setAnswered(true);
+    }
+  };
 
-                    return (
-                        <div
-                            key={index}
-                            className={`p-3 rounded-lg border-2 transition duration-200 cursor-pointer flex items-center ${statusClass} ${selected === null ? 'hover:shadow-md' : ''}`}
-                            onClick={() => selected === null && setSelected(index)} // Only allow selection once
-                        >
-                            <span className={`font-semibold mr-3 w-5 text-center ${isSelected ? 'text-white' : 'text-gray-600'} ${isCorrect(index) && isSelected ? 'bg-green-500 p-1 rounded-full' : isSelected ? 'bg-red-500 p-1 rounded-full' : 'border border-gray-400 rounded-full w-5 h-5 flex items-center justify-center text-xs'}`}>
-                                {String.fromCharCode(65 + index)}
-                            </span>
-                            <span className="flex-1 text-gray-800">{option}</span>
-                            {isSelected && (
-                                isCorrect(index) ? <CheckCircle className="w-5 h-5 text-green-600 ml-2" /> : <XCircle className="w-5 h-5 text-red-600 ml-2" />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-            
-            {/* Explanation/Feedback */}
-            {selected !== null && (
-                <div className="mt-6">
-                    <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 transition flex items-center"
-                    >
-                        {showExplanation ? "Hide Explanation" : "View Explanation"}
-                    </button>
-                    {showExplanation && (
-                        <div className="mt-3 p-4 bg-gray-100 rounded-lg text-sm border-l-4 border-blue-500">
-                            <p className="font-bold mb-1 text-blue-800">Correct Answer: {correctLetter}</p>
-                            <p className="text-gray-700">{explanation}</p>
-                        </div>
-                    )}
-                </div>
+  const handleReset = () => {
+    setSelected(null);
+    setAnswered(false);
+    setShowExplanation(false);
+  };
+
+  return (
+    <div className="mcq-block-container">
+      <div className="mcq-question">
+        <HelpCircle size={24} className="question-icon" />
+        <h3>{question}</h3>
+      </div>
+
+      <div className="mcq-options">
+        {options.map((option, index) => {
+          const selected_state = selected === index;
+          const is_correct = isCorrect(index);
+          const show_result = answered && selected_state;
+
+          let optionClass = "mcq-option";
+          if (show_result) {
+            optionClass += is_correct ? " correct" : " incorrect";
+          } else if (!answered) {
+            optionClass += " interactive";
+          }
+
+          return (
+            <button
+              key={index}
+              onClick={() => handleSelectOption(index)}
+              disabled={answered}
+              className={optionClass}
+              aria-pressed={selected_state}
+            >
+              <span className="option-letter">
+                {String.fromCharCode(65 + index)}
+              </span>
+              <span className="option-text">{option}</span>
+              {show_result && (
+                is_correct ? (
+                  <CheckCircle size={20} className="option-icon correct-icon" />
+                ) : (
+                  <XCircle size={20} className="option-icon incorrect-icon" />
+                )
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Feedback Section */}
+      {answered && (
+        <div className="mcq-feedback">
+          <div className={`feedback-status ${selected === answer ? "correct" : "incorrect"}`}>
+            {selected === answer ? (
+              <>
+                <CheckCircle size={20} />
+                <span>Correct! Well done!</span>
+              </>
+            ) : (
+              <>
+                <XCircle size={20} />
+                <span>Incorrect. The correct answer is <strong>{correctLetter}</strong></span>
+              </>
             )}
+          </div>
+
+          {explanation && (
+            <div className="explanation-section">
+              <button
+                onClick={() => setShowExplanation(!showExplanation)}
+                className="explanation-toggle"
+              >
+                {showExplanation ? "Hide Explanation" : "Show Explanation"}
+              </button>
+              {showExplanation && (
+                <div className="explanation-content">
+                  <p><strong>Why is this the answer?</strong></p>
+                  <p>{explanation}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button onClick={handleReset} className="mcq-reset-btn">
+            Try Again
+          </button>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default MCQBlock;
+

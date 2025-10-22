@@ -1,97 +1,338 @@
-// src/pages/Profile.jsx (Renamed from MyCourses for clarity, but logic remains)
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { getMyCourses, deleteCourseById } from "../utils/api";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import {
+  getUserCourses,
+  deleteCourseById,
+  getUserProfile,
+} from "../utils/api";
+import {
+  Trash2,
+  Eye,
+  Plus,
+  LogOut,
+  Settings,
+  BookOpen,
+  Clock,
+  Zap,
+  AlertCircle,
+} from "lucide-react";
+import "./Profile.css";
 
 const ProfilePage = () => {
-  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, logout, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
 
+  const [courses, setCourses] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Fetch user courses and profile
   useEffect(() => {
     if (!isAuthenticated) return;
-    const loadCourses = async () => {
+
+    const loadUserData = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         const token = await getAccessTokenSilently();
-        const data = await getMyCourses(token);
-        setCourses(data);
+
+        // Fetch user courses
+        const coursesData = await getUserCourses(token);
+        setCourses(coursesData || []);
+
+        // Fetch user profile
+        try {
+          const profileData = await getUserProfile(token);
+          setUserProfile(profileData);
+        } catch (profileErr) {
+          console.warn("Could not fetch profile data:", profileErr);
+          // Continue without profile data - use Auth0 user info
+        }
       } catch (err) {
-        console.error("Failed to load courses:", err);
+        console.error("Failed to load user data:", err);
+        setError(err.message || "Failed to load your data");
       } finally {
         setLoading(false);
       }
     };
-    loadCourses();
+
+    loadUserData();
   }, [isAuthenticated, getAccessTokenSilently]);
 
-  if (!isAuthenticated) return <div className="p-6">Please log in to view your profile.</div>;
+  const handleDeleteCourse = async (courseId) => {
+    setDeleting(courseId);
+    try {
+      const token = await getAccessTokenSilently();
+      await deleteCourseById(courseId, token);
+      setCourses(courses.filter((c) => c._id !== courseId));
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error("Failed to delete course:", err);
+      setError("Failed to delete course");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleLogout = () => {
+    logout({ returnTo: window.location.origin });
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="profile-page-auth-required">
+        <AlertCircle size={48} />
+        <h2>Authentication Required</h2>
+        <p>Please log in to view and manage your profile</p>
+      </div>
+    );
+  }
+
+  const totalLessons = courses.reduce(
+    (sum, course) =>
+      sum +
+      (course.modules?.reduce(
+        (mSum, m) => mSum + (m.lessons?.length || 0),
+        0
+      ) || 0),
+    0
+  );
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-10">
-      
-      {/* Profile Header Section (Gemini UI Style) */}
-      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-        <h1 className="text-3xl font-bold mb-2 text-blue-700">User Profile</h1>
-        <div className="flex items-center space-x-4">
-          <img 
-            src={user.picture || 'default-avatar.png'} // Use default if no picture
-            alt="User Avatar"
-            className="w-16 h-16 rounded-full border-2 border-blue-500"
-          />
-          <div>
-            <p className="text-xl font-semibold">{user.name || user.nickname || 'User'}</p>
-            <p className="text-gray-500 text-sm">{user.email}</p>
-            <p className="text-gray-500 text-xs mt-1">Auth0 ID: {user.sub}</p>
+    <div className="profile-page-container">
+      {/* Error Banner */}
+      {error && (
+        <div className="profile-error-banner">
+          <AlertCircle size={20} />
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="error-close"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Profile Header */}
+      <header className="profile-header">
+        <div className="profile-header-content">
+          {/* Avatar Section */}
+          <div className="profile-avatar-section">
+            <img
+              src={user?.picture || "https://api.dicebear.com/7.x/avataaars/svg"}
+              alt={user?.name || "User"}
+              className="profile-avatar"
+              onError={(e) => {
+                e.target.src =
+                  "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
+              }}
+            />
+            <div className="profile-user-info">
+              <h1 className="profile-user-name">
+                {user?.name || user?.nickname || "User"}
+              </h1>
+              <p className="profile-user-email">{user?.email}</p>
+              <p className="profile-user-id">ID: {user?.sub?.substring(0, 12)}...</p>
+            </div>
+          </div>
+
+          {/* Header Actions */}
+          <div className="profile-header-actions">
+            <button
+              onClick={() => navigate("/")}
+              className="action-btn create-btn"
+              title="Create new course"
+            >
+              <Plus size={18} />
+              <span>New Course</span>
+            </button>
+            <button
+              onClick={() => {}}
+              className="action-btn settings-btn"
+              title="Settings"
+            >
+              <Settings size={18} />
+              <span>Settings</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="action-btn logout-btn"
+              title="Logout"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* My Courses Section */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">My Created Courses ({courses.length})</h2>
-        {loading ? (
-          <div className="text-gray-500">Loading your courses...</div>
-        ) : courses.length === 0 ? (
-          <div className="p-4 bg-yellow-50 rounded-lg text-yellow-800">You haven't generated any courses yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <CourseCard 
-                key={course._id} 
-                course={course} 
-                onView={() => navigate(`/course/${course._id}`)} 
-                // onDelete={handleDelete} 
-                // NOTE: Move delete logic to a separate component or keep it clean
-              />
-            ))}
+        {/* Stats Bar */}
+        <div className="profile-stats">
+          <div className="stat-card">
+            <BookOpen size={20} />
+            <div>
+              <p className="stat-label">Courses</p>
+              <p className="stat-value">{courses.length}</p>
+            </div>
           </div>
-        )}
-      </div>
+          <div className="stat-card">
+            <Clock size={20} />
+            <div>
+              <p className="stat-label">Lessons</p>
+              <p className="stat-value">{totalLessons}</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <Zap size={20} />
+            <div>
+              <p className="stat-label">Status</p>
+              <p className="stat-value">Active</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="profile-main">
+        {/* My Courses Section */}
+        <section className="profile-courses-section">
+          <div className="section-header">
+            <h2>Your Courses</h2>
+            <span className="course-count">{courses.length} total</span>
+          </div>
+
+          {loading ? (
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Loading your courses...</p>
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="empty-state">
+              <BookOpen size={48} />
+              <h3>No Courses Yet</h3>
+              <p>Start by creating your first AI-powered course</p>
+              <button
+                onClick={() => navigate("/")}
+                className="empty-state-btn"
+              >
+                <Plus size={18} />
+                Create Course
+              </button>
+            </div>
+          ) : (
+            <div className="courses-grid">
+              {courses.map((course) => (
+                <CourseCard
+                  key={course._id}
+                  course={course}
+                  onView={() => navigate(`/course/${course._id}`)}
+                  onDelete={() => setDeleteConfirm(course._id)}
+                  isDeleting={deleting === course._id}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="delete-modal-overlay">
+          <div className="delete-modal">
+            <h3>Delete Course?</h3>
+            <p>
+              Are you sure you want to delete "
+              {
+                courses.find((c) => c._id === deleteConfirm)?.title
+              }"? This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="modal-btn cancel-btn"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteCourse(deleteConfirm)}
+                disabled={deleting === deleteConfirm}
+                className="modal-btn delete-btn"
+              >
+                {deleting === deleteConfirm ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Simple Card Component for better profile styling
-const CourseCard = ({ course, onView }) => (
-    <div className="p-5 border rounded-xl shadow-md bg-white hover:shadow-lg transition cursor-pointer flex flex-col justify-between">
-        <h3 className="text-lg font-bold text-blue-600">{course.title}</h3>
-        <p className="text-sm text-gray-600 line-clamp-2 mt-1">{course.description}</p>
-        <div className="mt-3 text-xs text-gray-400">
-            {course.tags.map(tag => <span key={tag} className="mr-2 px-2 py-1 bg-gray-100 rounded">{tag}</span>)}
-        </div>
-        <button 
-            onClick={onView} 
-            className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+/**
+ * Course Card Component
+ */
+const CourseCard = ({ course, onView, onDelete, isDeleting }) => {
+  const moduleCount = course.modules?.length || 0;
+  const lessonCount =
+    course.modules?.reduce((sum, m) => sum + (m.lessons?.length || 0), 0) || 0;
+
+  return (
+    <div className="course-card">
+      <div className="course-card-header">
+        <h3 className="course-card-title">{course.title}</h3>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          className="card-delete-btn"
+          title="Delete course"
         >
-            View Course
+          <Trash2 size={18} />
         </button>
-        {/* Optional: Add Delete Button here with logic */}
+      </div>
+
+      <p className="course-card-description">{course.description}</p>
+
+      <div className="course-card-tags">
+        {course.tags && course.tags.length > 0 ? (
+          course.tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="tag">
+              {tag}
+            </span>
+          ))
+        ) : (
+          <span className="tag default-tag">AI-Generated</span>
+        )}
+        {course.tags && course.tags.length > 3 && (
+          <span className="tag more-tag">+{course.tags.length - 3}</span>
+        )}
+      </div>
+
+      <div className="course-card-stats">
+        <div className="card-stat">
+          <BookOpen size={14} />
+          <span>{moduleCount} Modules</span>
+        </div>
+        <div className="card-stat">
+          <Clock size={14} />
+          <span>{lessonCount} Lessons</span>
+        </div>
+      </div>
+
+      <button onClick={onView} className="course-card-btn">
+        <Eye size={16} />
+        <span>View Course</span>
+      </button>
     </div>
-);
+  );
+};
 
 export default ProfilePage;
+
 
 
 

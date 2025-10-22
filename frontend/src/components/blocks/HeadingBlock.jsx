@@ -1,7 +1,14 @@
-import React from 'react';
+import React from "react";
+import "./HeadingBlock.css";
 
-const HeadingBlock = ({ text }) => (
-    <h2 className="text-3xl font-bold mt-8 mb-4 text-gray-800 border-b pb-2">{text}</h2>
-);
+const HeadingBlock = ({ text, level = 2 }) => {
+  const HeadingTag = `h${Math.min(Math.max(level, 1), 6)}`;
+
+  return (
+    <HeadingTag className="heading-block">
+      {text}
+    </HeadingTag>
+  );
+};
 
 export default HeadingBlock;

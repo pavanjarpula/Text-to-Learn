@@ -1,14 +1,56 @@
-import React from 'react';
+import React, { useState } from "react";
+import { Play, AlertCircle } from "lucide-react";
+import "./VideoBlock.css";
 
-const VideoBlock = ({ url }) => (
-    <div className="my-6 p-4 bg-gray-100 rounded-xl shadow-inner flex flex-col items-center">
-        <h3 className="text-xl font-semibold mb-3 text-blue-600">Video Resource</h3>
-        <p className="text-gray-600 italic">Search query: "{url}"</p>
-        <div className="w-full max-w-lg h-64 bg-gray-300 rounded-lg flex items-center justify-center mt-3">
-            <p className="text-gray-500">Video Placeholder: Search for "{url}"</p>
+const VideoBlock = ({ query = "", url = "" }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Use direct URL if provided, otherwise use query for search
+  const videoUrl = url || (query ? `https://www.youtube.com/embed/?search_query=${encodeURIComponent(query)}` : null);
+
+  if (!videoUrl) {
+    return (
+      <div className="video-block-error">
+        <AlertCircle size={24} />
+        <p>No video available for this lesson</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="video-block-container">
+      <div className="video-wrapper">
+        <div className="video-placeholder">
+          {isLoading && (
+            <div className="video-loading">
+              <div className="spinner"></div>
+              <p>Loading video...</p>
+            </div>
+          )}
+          <iframe
+            className={`video-iframe ${!isLoading ? "loaded" : ""}`}
+            src={videoUrl}
+            title="Lesson Video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setError("Failed to load video");
+            }}
+          />
         </div>
-        <p className="text-xs mt-2 text-gray-400">Note: External video embedding requires a dedicated search and embed logic.</p>
+        {error && (
+          <div className="video-error-message">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
     </div>
-);
+  );
+};
 
 export default VideoBlock;
+

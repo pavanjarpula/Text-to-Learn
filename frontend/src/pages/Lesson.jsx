@@ -1,55 +1,104 @@
-// src/pages/Lesson.jsx
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getLessonById } from "../utils/api"; // You need to update this to fetch the course ID
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import LessonRenderer from "../components/LessonRenderer";
+import { getLessonById } from "../utils/api";
+import "./Lesson.css";
 
-const LessonPage = () => {
-  const { id } = useParams(); // lessonId
-  const [lesson, setLesson] = useState(null);
-  const [courseId, setCourseId] = useState(null); // 👈 New state for course ID
+const LessonPage = ({ 
+  lesson = null, 
+  module = null, 
+  course = null,
+  moduleIdx = 0,
+  lessonIdx = 0,
+  onBack,
+  onNext,
+  onPrevious 
+}) => {
+  const [lessonData, setLessonData] = useState(lesson);
+  const [loading, setLoading] = useState(!lesson);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const loadLesson = async () => {
-      try {
-        // ASSUMPTION: The API response now includes the parent course ID, 
-        // e.g., data.courseId
-        const data = await getLessonById(id); 
-        setLesson(data);
-        // If your backend doesn't return courseId, you'll need to update the backend API
-        // or fetch the module to get its parent courseId.
-        // For now, let's assume the returned lesson data has a 'course' field.
-        setCourseId(data.course || data.module?.course); 
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    loadLesson();
-  }, [id]);
+  // If lesson ID is passed via params (for direct URL navigation)
+  const lessonId = lesson?._id;
 
-  if (!lesson) return <div className="p-6">Loading lesson...</div>;
-  
-  // Determine the correct back link
-  const backLink = courseId ? `/course/${courseId}` : "/";
+  useEffect(() => {
+    if (lessonId && !lesson) {
+      const fetchLesson = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await getLessonById(lessonId);
+          setLessonData(data);
+        } catch (err) {
+          setError(err.message || "Failed to load lesson");
+          console.error("Error fetching lesson:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchLesson();
+    }
+  }, [lessonId, lesson]);
 
-  return (
-    <div className="p-6">
-      {/* 👈 Updated Link to go back to the Course Page */}
-      <Link to={backLink} className="text-sm text-blue-600 hover:underline">
-        ← Back to Course
-      </Link>
-      <h1 className="text-2xl font-bold mt-2">{lesson.title}</h1>
-      {/* Pass full lesson object (or just required props) to LessonRenderer */}
-      <div className="mt-4">
-        <LessonRenderer 
-            title={lesson.title} 
-            objectives={lesson.objectives} 
-            content={lesson.content || []} 
-        />
-      </div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="lesson-page-loading">
+        <div className="spinner"></div>
+        <p>Loading lesson...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="lesson-page-error">
+        <AlertCircle size={48} />
+        <h2>Error Loading Lesson</h2>
+        <p>{error}</p>
+        <button onClick={onBack} className="error-back-btn">
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  if (!lessonData) {
+    return (
+      <div className="lesson-page-error">
+        <AlertCircle size={48} />
+        <h2>Lesson Not Found</h2>
+        <p>The lesson you're looking for doesn't exist.</p>
+        <button onClick={onBack} className="error-back-btn">
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="lesson-page-container">
+      <div className="lesson-page-header">
+        <button onClick={onBack} className="lesson-back-btn">
+          <ArrowLeft size={18} />
+          <span>Back</span>
+        </button>
+      </div>
+
+      <LessonRenderer
+        lesson={lessonData}
+        module={module}
+        course={course}
+        moduleIdx={moduleIdx}
+        lessonIdx={lessonIdx}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        objectives={lessonData.objectives || []}
+        content={lessonData.content || []}
+      />
+    </div>
+  );
 };
 
 export default LessonPage;
+
 

@@ -1,0 +1,25 @@
+:root {
+  --text-secondary: #cbd5e1;
+}
+
+.paragraph-block {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin: 1rem 0;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.paragraph-block br {
+  display: block;
+  content: "";
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .paragraph-block {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+}

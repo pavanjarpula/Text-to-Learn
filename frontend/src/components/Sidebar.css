@@ -1,3 +1,21 @@
+:root {
+  --bg-sidebar: #1e293b;
+  --bg-card: #1f2937;
+  --border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --primary: #06b6d4;
+  --secondary: #a855f7;
+}
+
+/* ========== SIDEBAR CONTAINER ========== */
+.sidebar-wrapper {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
 .sidebar {
   width: 280px;
   height: 100%;
@@ -7,11 +25,44 @@
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
+  transition: all 0.3s ease;
+  z-index: 20;
 }
 
+.sidebar.collapsed {
+  width: 80px;
+  align-items: center;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 21;
+  transition: all 0.3s ease;
+  color: white;
+  font-size: 14px;
+}
+
+.sidebar-toggle:hover {
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+/* ========== SIDEBAR HEADER ========== */
 .sidebar-header {
   padding: 1rem;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .new-course-btn {
@@ -30,6 +81,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+  white-space: nowrap;
 }
 
 .new-course-btn:hover {
@@ -37,6 +89,17 @@
   box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
 }
 
+.sidebar.collapsed .new-course-btn {
+  padding: 0.75rem;
+  width: 50px;
+  height: 50px;
+}
+
+.sidebar.collapsed .new-course-btn span {
+  display: none;
+}
+
+/* ========== SIDEBAR CONTENT ========== */
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
@@ -53,25 +116,42 @@
   color: var(--text-muted);
 }
 
+.sidebar.collapsed .sidebar-empty {
+  padding: 2rem 0.5rem;
+}
+
 .sidebar-empty svg {
   margin-bottom: 1rem;
   opacity: 0.4;
+  width: 32px;
+  height: 32px;
 }
 
 .sidebar-empty p {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-empty p {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-empty span {
+  display: none;
 }
 
 .sidebar-empty span {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  display: block;
 }
 
 .sidebar-courses {
   padding: 0.5rem;
 }
 
+/* ========== COURSE ITEM ========== */
 .course-item {
   margin-bottom: 0.5rem;
   border-radius: 8px;
@@ -90,6 +170,11 @@
   padding: 0.75rem;
 }
 
+.sidebar.collapsed .course-header {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
 .course-expand-btn {
   padding: 0.25rem;
   background: none;
@@ -98,11 +183,17 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .course-expand-btn svg.rotated {
   transform: rotate(180deg);
+}
+
+.sidebar.collapsed .course-expand-btn {
+  display: none;
 }
 
 .course-title {
@@ -117,10 +208,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 .course-title:hover {
   color: var(--text-primary);
+}
+
+.sidebar.collapsed .course-title {
+  display: none;
 }
 
 .course-delete-btn {
@@ -131,6 +227,10 @@
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .course-item:hover .course-delete-btn {
@@ -141,12 +241,25 @@
   color: #ef4444;
 }
 
+.sidebar.collapsed .course-delete-btn {
+  opacity: 1;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* ========== MODULES LIST ========== */
 .modules-list {
   padding-left: 1rem;
   border-left: 2px solid rgba(6, 182, 212, 0.2);
   margin-left: 1rem;
 }
 
+.sidebar.collapsed .modules-list {
+  display: none;
+}
+
+/* ========== MODULE ITEM ========== */
 .module-item {
   margin-bottom: 0.25rem;
 }
@@ -161,7 +274,7 @@
   border: none;
   border-radius: 6px;
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -179,13 +292,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  min-width: 20px;
+  height: 20px;
   background: var(--primary);
   color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
+  flex-shrink: 0;
 }
 
 .module-title {
@@ -196,6 +310,7 @@
   white-space: nowrap;
 }
 
+/* ========== LESSONS LIST ========== */
 .lessons-list {
   padding-left: 1.5rem;
 }
@@ -205,16 +320,16 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: none;
   border: none;
   border-radius: 6px;
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .lesson-item:hover {
@@ -232,13 +347,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: rgba(6, 182, 212, 0.2);
   border-radius: 4px;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--primary);
+  flex-shrink: 0;
 }
 
 .lesson-title {
@@ -248,6 +364,7 @@
   white-space: nowrap;
 }
 
+/* ========== SCROLLBAR ========== */
 .sidebar-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -261,8 +378,47 @@
   border-radius: 3px;
 }
 
-@media (max-width: 768px) {
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.5);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
   .sidebar {
-    display: none;
+    width: 250px;
+  }
+
+  .new-course-btn {
+    font-size: 0.85rem;
+    padding: 0.75rem 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-wrapper {
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+    z-index: 25;
+  }
+
+  .sidebar {
+    position: absolute;
+    width: 250px;
+    height: 100%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 250px;
+  }
+
+  .sidebar-toggle {
+    right: -40px;
+    width: 40px;
+    height: 60px;
+    border-radius: 0 12px 12px 0;
   }
 }

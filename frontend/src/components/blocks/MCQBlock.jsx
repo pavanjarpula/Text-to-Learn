@@ -12,6 +12,20 @@ const MCQBlock = ({
   const [showExplanation, setShowExplanation] = useState(false);
   const [answered, setAnswered] = useState(false);
 
+  console.log("MCQBlock received:", { question, options, answer, explanation });
+
+  // Handle missing question
+  if (!question || question.trim() === "") {
+    return (
+      <div className="mcq-block-container mcq-empty">
+        <div className="mcq-question">
+          <HelpCircle size={24} className="question-icon" />
+          <h3>Question not available</h3>
+        </div>
+      </div>
+    );
+  }
+
   const isCorrect = (index) => index === answer;
   const correctLetter = String.fromCharCode(65 + (answer || 0));
 
@@ -30,47 +44,55 @@ const MCQBlock = ({
 
   return (
     <div className="mcq-block-container">
+      {/* Question Section */}
       <div className="mcq-question">
         <HelpCircle size={24} className="question-icon" />
         <h3>{question}</h3>
       </div>
 
-      <div className="mcq-options">
-        {options.map((option, index) => {
-          const selected_state = selected === index;
-          const is_correct = isCorrect(index);
-          const show_result = answered && selected_state;
+      {/* Options Section */}
+      {options && options.length > 0 ? (
+        <div className="mcq-options">
+          {options.map((option, index) => {
+            const selected_state = selected === index;
+            const is_correct = isCorrect(index);
+            const show_result = answered && selected_state;
 
-          let optionClass = "mcq-option";
-          if (show_result) {
-            optionClass += is_correct ? " correct" : " incorrect";
-          } else if (!answered) {
-            optionClass += " interactive";
-          }
+            let optionClass = "mcq-option";
+            if (show_result) {
+              optionClass += is_correct ? " correct" : " incorrect";
+            } else if (!answered) {
+              optionClass += " interactive";
+            }
 
-          return (
-            <button
-              key={index}
-              onClick={() => handleSelectOption(index)}
-              disabled={answered}
-              className={optionClass}
-              aria-pressed={selected_state}
-            >
-              <span className="option-letter">
-                {String.fromCharCode(65 + index)}
-              </span>
-              <span className="option-text">{option}</span>
-              {show_result && (
-                is_correct ? (
-                  <CheckCircle size={20} className="option-icon correct-icon" />
-                ) : (
-                  <XCircle size={20} className="option-icon incorrect-icon" />
-                )
-              )}
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={index}
+                onClick={() => handleSelectOption(index)}
+                disabled={answered}
+                className={optionClass}
+                aria-pressed={selected_state}
+              >
+                <span className="option-letter">
+                  {String.fromCharCode(65 + index)}
+                </span>
+                <span className="option-text">{option}</span>
+                {show_result && (
+                  is_correct ? (
+                    <CheckCircle size={20} className="option-icon correct-icon" />
+                  ) : (
+                    <XCircle size={20} className="option-icon incorrect-icon" />
+                  )
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mcq-options-empty">
+          <p>No options available for this question</p>
+        </div>
+      )}
 
       {/* Feedback Section */}
       {answered && (
@@ -89,7 +111,7 @@ const MCQBlock = ({
             )}
           </div>
 
-          {explanation && (
+          {explanation && explanation.trim() !== "" && (
             <div className="explanation-section">
               <button
                 onClick={() => setShowExplanation(!showExplanation)}

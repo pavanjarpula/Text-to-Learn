@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { ChevronDown, BookOpen, Clock, Zap } from "lucide-react";
+import { getLessonById } from "../utils/api";
 import "./CoursePreview.css";
 
 const CoursePreview = ({ course, onLessonSelect }) => {
   const [expandedModules, setExpandedModules] = useState({});
-  const [selectedLesson, setSelectedLesson] = useState(null); // ✅ Track selected lesson
+  const [loadingLessonId, setLoadingLessonId] = useState(null);
 
   if (!course) {
     console.warn("CoursePreview: No course prop received");
@@ -18,6 +19,54 @@ const CoursePreview = ({ course, onLessonSelect }) => {
       ...prev,
       [moduleId]: !prev[moduleId],
     }));
+  };
+
+  const handleLessonClick = async (lesson, module, lessonIdx, moduleIdx) => {
+    const lessonId = lesson._id;
+    
+    console.log("=== LESSON CLICK ===");
+    console.log("Lesson ID:", lessonId);
+    console.log("Lesson title:", lesson.title);
+    
+    // Set loading state
+    setLoadingLessonId(lessonId);
+
+    try {
+      console.log("Fetching lesson from API...");
+      const freshLessonData = await getLessonById(lessonId);
+      
+      console.log("✅ Fetch successful");
+      console.log("Fresh lesson:", freshLessonData);
+      console.log("Content length:", freshLessonData.content?.length);
+      console.log("Objectives length:", freshLessonData.objectives?.length);
+
+      // Pass the fresh data
+      if (onLessonSelect) {
+        console.log("Calling onLessonSelect with fresh data");
+        onLessonSelect({
+          lesson: freshLessonData,
+          module,
+          lessonIdx,
+          moduleIdx,
+        });
+      } else {
+        console.error("onLessonSelect is not defined!");
+      }
+    } catch (err) {
+      console.error("❌ Error fetching lesson:", err);
+      console.log("Using fallback: original lesson object");
+      
+      if (onLessonSelect) {
+        onLessonSelect({
+          lesson,
+          module,
+          lessonIdx,
+          moduleIdx,
+        });
+      }
+    } finally {
+      setLoadingLessonId(null);
+    }
   };
 
   const totalLessons = modules.reduce(
@@ -90,35 +139,47 @@ const CoursePreview = ({ course, onLessonSelect }) => {
                     <div className="lessons-container">
                       {lessons && lessons.length > 0 ? (
                         <ul className="lessons-list">
-                          {lessons.map((lesson, lessonIdx) => (
-                            <li
-                              key={lesson._id || `lesson-${lessonIdx}`}
-                              className="lesson-item"
-                            >
-                              <button
-                                onClick={() => {
-                                  onLessonSelect?.({
-                                    lesson,
-                                    module,
-                                    lessonIdx,
-                                    moduleIdx,
-                                  });
-                                  setSelectedLesson(lesson); // ✅ show locally
-                                }}
-                                className="lesson-button"
+                          {lessons.map((lesson, lessonIdx) => {
+                            const isLoading =
+                              loadingLessonId === lesson._id;
+
+                            return (
+                              <li
+                                key={lesson._id || `lesson-${lessonIdx}`}
+                                className="lesson-item"
                               >
-                                <span className="lesson-index">
-                                  {lessonIdx + 1}
-                                </span>
-                                <span className="lesson-title">
-                                  {lesson.title}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
+                                <button
+                                  onClick={() => {
+                                    console.log("Button clicked for lesson:", lesson.title);
+                                    handleLessonClick(
+                                      lesson,
+                                      module,
+                                      lessonIdx,
+                                      moduleIdx
+                                    );
+                                  }}
+                                  className={`lesson-button ${
+                                    isLoading ? "loading" : ""
+                                  }`}
+                                  disabled={isLoading}
+                                >
+                                  <span className="lesson-index">
+                                    {lessonIdx + 1}
+                                  </span>
+                                  <span className="lesson-title">
+                                    {isLoading
+                                      ? `Loading ${lesson.title}...`
+                                      : lesson.title}
+                                  </span>
+                                </button>
+                              </li>
+                            );
+                          })}
                         </ul>
                       ) : (
-                        <div className="no-lessons">No lessons in this module</div>
+                        <div className="no-lessons">
+                          No lessons in this module
+                        </div>
                       )}
                     </div>
                   )}
@@ -133,24 +194,11 @@ const CoursePreview = ({ course, onLessonSelect }) => {
           </div>
         )}
       </div>
-
-      {/* ✅ Selected Lesson Display (safe render) */}
-      {selectedLesson && (
-        <div className="selected-lesson-view">
-          <h2 className="selected-lesson-title">{selectedLesson.title}</h2>
-          <p className="selected-lesson-content">
-            {typeof selectedLesson.content === "string"
-              ? selectedLesson.content
-              : selectedLesson.content?.text || "No content available."}
-          </p>
-        </div>
-      )}
     </div>
   );
 };
 
 export default CoursePreview;
-
 
 
 

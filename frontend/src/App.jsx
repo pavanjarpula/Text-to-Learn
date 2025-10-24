@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Auth0Provider } from '@auth0/auth0-react';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -12,34 +12,60 @@ function App() {
   const [activeLesson, setActiveLesson] = useState(null);
 
   const handleCourseGenerated = (course) => {
+    console.log('App - Course generated:', course);
     setCourses(prev => [course, ...prev]);
     setActiveCourse(course);
   };
 
   const handleSaveCourse = async (course) => {
-    // This will save to backend when authenticated
-    console.log('Saving course:', course);
-    // Add to courses list if not already there
+    console.log('App - Saving course:', course);
     if (!courses.find(c => c._id === course._id)) {
       setCourses(prev => [course, ...prev]);
     }
   };
 
   const handleSelectCourse = (course) => {
+    console.log('App - Selecting course:', course.title);
     setActiveCourse(course);
     setActiveLesson(null);
   };
 
-  const handleSelectLesson = (lesson) => {
-    setActiveLesson(lesson);
+  const handleSelectLesson = (lessonData) => {
+    console.log('App - handleSelectLesson received:', lessonData);
+    
+    // lessonData can be:
+    // 1. From CoursePreview: { lesson, module, lessonIdx, moduleIdx }
+    // 2. From Sidebar: just the lesson object
+    
+    if (lessonData && lessonData.lesson) {
+      // It's an object from CoursePreview
+      console.log('Setting activeLesson from CoursePreview data');
+      setActiveLesson(lessonData);
+    } else if (lessonData && lessonData._id) {
+      // It's a direct lesson object from Sidebar
+      console.log('Setting activeLesson from Sidebar');
+      setActiveLesson(lessonData);
+    }
   };
 
   const handleDeleteCourse = (courseId) => {
+    console.log('App - Deleting course:', courseId);
     setCourses(prev => prev.filter(c => c._id !== courseId));
     if (activeCourse?._id === courseId) {
       setActiveCourse(null);
       setActiveLesson(null);
     }
+  };
+
+  const handleBackToCourse = () => {
+    console.log('App - Going back to course');
+    setActiveLesson(null);
+  };
+
+  const handleNewCourse = () => {
+    console.log('App - New course');
+    setActiveCourse(null);
+    setActiveLesson(null);
   };
 
   return (
@@ -75,11 +101,8 @@ function App() {
                   onCourseGenerated={handleCourseGenerated}
                   onSaveCourse={handleSaveCourse}
                   onSelectLesson={handleSelectLesson}
-                  onBackToCourse={() => setActiveLesson(null)}
-                  onNewCourse={() => {
-                    setActiveCourse(null);
-                    setActiveLesson(null);
-                  }}
+                  onBackToCourse={handleBackToCourse}
+                  onNewCourse={handleNewCourse}
                 />
               }
             />
@@ -95,7 +118,6 @@ function App() {
 }
 
 export default App;
-
 
 
 

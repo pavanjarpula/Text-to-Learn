@@ -159,7 +159,10 @@ export const saveCourse = async (course, token) => {
   if (!token) throw new Error("Authentication required to save courses");
   if (!course) throw new Error("Course object is required");
   try {
-    return await apiRequest("/courses", "POST", course, token);
+    console.log("Saving course:", course.title);
+    const result = await apiRequest("/courses", "POST", course, token);
+    console.log("Course saved successfully:", result);
+    return result;
   } catch (err) {
     console.error("Error saving course:", err);
     throw err;
@@ -260,6 +263,37 @@ export const getLessonById = async (lessonId) => {
   }
 };
 
+/**
+ * Save/Create a lesson in a module
+ * POST /api/lessons?moduleId={moduleId}
+ */
+export const saveLesson = async (moduleId, lesson, token) => {
+  if (!token) throw new Error("Authentication required to save lessons");
+  if (!moduleId) throw new Error("Module ID is required");
+  if (!lesson) throw new Error("Lesson object is required");
+
+  try {
+    console.log("Saving lesson:", lesson.title);
+    const lessonData = {
+      title: lesson.title,
+      objectives: lesson.objectives || [],
+      content: lesson.content || [],
+    };
+
+    const result = await apiRequest(
+      `/lessons?moduleId=${moduleId}`,
+      "POST",
+      lessonData,
+      token
+    );
+    console.log("Lesson saved successfully:", result);
+    return result;
+  } catch (err) {
+    console.error("Error saving lesson:", err);
+    throw err;
+  }
+};
+
 export const addLessonToModule = async (moduleId, lesson, token) => {
   if (!token) throw new Error("Authentication required");
   if (!moduleId) throw new Error("Module ID is required");
@@ -292,7 +326,15 @@ export const updateLesson = async (lessonId, updates, token) => {
   if (!token) throw new Error("Authentication required");
   if (!lessonId) throw new Error("Lesson ID is required");
   try {
-    return await apiRequest(`/lessons/${lessonId}`, "PUT", updates, token);
+    console.log("Updating lesson:", lessonId);
+    const result = await apiRequest(
+      `/lessons/${lessonId}`,
+      "PUT",
+      updates,
+      token
+    );
+    console.log("Lesson updated successfully:", result);
+    return result;
   } catch (err) {
     console.error("Error updating lesson:", err);
     throw err;
@@ -327,6 +369,7 @@ export const markLessonComplete = async (lessonId, token) => {
   if (!token) throw new Error("Authentication required");
   if (!lessonId) throw new Error("Lesson ID is required");
   try {
+    console.log("Marking lesson as complete:", lessonId);
     return await apiRequest(
       `/progress/lessons/${lessonId}/complete`,
       "POST",
@@ -368,6 +411,7 @@ const apiExports = {
   deleteModuleById,
   getLessonsByModule,
   getLessonById,
+  saveLesson,
   addLessonToModule,
   deleteLessonById,
   updateLesson,

@@ -48,13 +48,30 @@ const Home = ({
     }
   };
 
+  // Handle lesson selection from CoursePreview
+  const handleLessonSelection = (lessonData) => {
+    console.log('Home - handleLessonSelection received:', lessonData);
+    
+    // CoursePreview passes an object with { lesson, module, lessonIdx, moduleIdx }
+    if (lessonData && lessonData.lesson) {
+      console.log('Setting activeLesson:', lessonData.lesson);
+      // Pass the complete lesson data to onSelectLesson
+      onSelectLesson(lessonData);
+    }
+  };
+
   // Show lesson content when lesson is selected
   if (activeLesson) {
+    console.log('Rendering lesson view with activeLesson:', activeLesson);
+    
     return (
       <div className="home-lesson-view">
         <LessonRenderer
-          lesson={activeLesson}
+          lesson={activeLesson.lesson || activeLesson}
+          module={activeLesson.module}
           course={activeCourse}
+          moduleIdx={activeLesson.moduleIdx || 0}
+          lessonIdx={activeLesson.lessonIdx || 0}
           onBack={onBackToCourse}
         />
       </div>
@@ -91,7 +108,7 @@ const Home = ({
         </div>
         <CoursePreview
           course={activeCourse}
-          onLessonSelect={onSelectLesson}
+          onLessonSelect={handleLessonSelection}
         />
       </div>
     );

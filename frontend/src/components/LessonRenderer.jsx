@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Download, BookmarkPlus, Share2, ArrowUp } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Download, BookmarkPlus, Share2, ArrowUp, Check } from "lucide-react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { saveLesson, markLessonComplete } from "../utils/api";
 import HeadingBlock from "./blocks/HeadingBlock";
 import ParagraphBlock from "./blocks/ParagraphBlock";
 import CodeBlock from "./blocks/CodeBlock";
@@ -25,17 +27,39 @@ const LessonRenderer = ({
   onNext,
   objectives = [],
   content = [],
+  onLessonSaved = () => {}, // Callback when lesson is saved
 }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
 
   // Use lesson prop first, fallback to component props
-  const lessonData = lesson || {};
-  const lessonObjectives = lessonData.objectives || objectives;
-  const lessonContent = lessonData.content || content;
+  const lessonData = useMemo(() => lesson || {}, [lesson]);
+  const lessonObjectives = useMemo(
+    () => lessonData.objectives || objectives,
+    [lessonData.objectives, objectives]
+  );
+  const lessonContent = useMemo(
+    () => lessonData.content || content,
+    [lessonData.content, content]
+  );
+
+  // Debug logging
+  useEffect(() => {
+    console.group("LessonRenderer Debug Info");
+    console.log("Lesson Data:", lessonData);
+    console.log("Module:", module);
+    console.log("Course:", course);
+    console.log("Objectives:", lessonObjectives);
+    console.log("Content Array:", lessonContent);
+    console.log("Content Length:", lessonContent?.length || 0);
+    console.groupEnd();
+  }, [lessonData, module, course, lessonObjectives, lessonContent]);
 
   // Detect scroll for scroll-to-top button
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
     };
@@ -45,6 +69,74 @@ const LessonRenderer = ({
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Handle save lesson
+  const handleSaveLesson = async () => {
+    if (!isAuthenticated) {
+      alert("Please login to save lessons");
+      return;
+    }
+
+    if (!lessonData._id) {
+      alert("Lesson ID not found");
+      return;
+    }
+
+    if (!module?._id) {
+      alert("Module ID not found");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const token = await getAccessTokenSilently();
+      
+      console.log("Saving lesson:", {
+        lessonId: lessonData._id,
+        lessonTitle: lessonData.title,
+        moduleId: module._id,
+        moduleName: module.title,
+      });
+
+      // Save the lesson
+      const result = await saveLesson(module._id, lessonData, token);
+      
+      console.log("Lesson saved successfully:", result);
+      setIsSaved(true);
+      
+      // Also mark as complete (progress tracking)
+      try {
+        await markLessonComplete(lessonData._id, token);
+      } catch (progressErr) {
+        console.warn("Could not mark lesson as complete:", progressErr);
+        // Don't fail the save if progress tracking fails
+      }
+
+      // Call parent callback
+      onLessonSaved(lessonData);
+
+      // Reset saved state after 2 seconds
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (err) {
+      console.error("Error saving lesson:", err);
+      setSaveError(err.message || "Failed to save lesson");
+      alert("Failed to save lesson: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle download (placeholder)
+  const handleDownload = () => {
+    alert("Download feature coming soon!");
+  };
+
+  // Handle share (placeholder)
+  const handleShare = () => {
+    alert("Share feature coming soon!");
   };
 
   return (
@@ -73,29 +165,55 @@ const LessonRenderer = ({
           {/* Lesson Actions */}
           <div className="lesson-header-actions">
             <button
-              onClick={() => setIsSaved(!isSaved)}
-              className={`action-btn ${isSaved ? "saved" : ""}`}
-              title="Save lesson"
+              onClick={handleSaveLesson}
+              disabled={isSaving || isSaved}
+              className={`action-btn ${isSaved ? "saved" : ""} ${isSaving ? "loading" : ""}`}
+              title={isSaving ? "Saving..." : isSaved ? "Saved!" : "Save lesson"}
             >
-              <BookmarkPlus size={18} />
-              <span>{isSaved ? "Saved" : "Save"}</span>
+              {isSaved ? (
+                <>
+                  <Check size={18} />
+                  <span>Saved</span>
+                </>
+              ) : (
+                <>
+                  <BookmarkPlus size={18} />
+                  <span>{isSaving ? "Saving..." : "Save"}</span>
+                </>
+              )}
             </button>
-            <button className="action-btn" title="Download as PDF">
+
+            <button
+              onClick={handleDownload}
+              className="action-btn"
+              title="Download as PDF"
+            >
               <Download size={18} />
               <span>Download</span>
             </button>
-            <button className="action-btn" title="Share lesson">
+
+            <button
+              onClick={handleShare}
+              className="action-btn"
+              title="Share lesson"
+            >
               <Share2 size={18} />
               <span>Share</span>
             </button>
           </div>
+
+          {saveError && (
+            <div className="save-error-message">
+              Error: {saveError}
+            </div>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
       <main className="lesson-main-content">
         {/* Objectives Section */}
-        {lessonObjectives.length > 0 && (
+        {lessonObjectives && lessonObjectives.length > 0 && (
           <section className="objectives-section">
             <h2 className="section-title">📚 What You'll Learn</h2>
             <div className="objectives-grid">
@@ -111,13 +229,15 @@ const LessonRenderer = ({
 
         {/* Content Blocks */}
         <section className="content-section">
-          {lessonContent.length > 0 ? (
+          {lessonContent && lessonContent.length > 0 ? (
             <div className="lesson-content">
               {lessonContent.map((block, idx) => {
                 const BlockComponent = blockMap[block.type] || (() => (
                   <div className="invalid-block">
-                    <p>Invalid Block Type: {block.type}</p>
-                    <pre>{JSON.stringify(block, null, 2)}</pre>
+                    <p>Block Type: {block.type}</p>
+                    {process.env.NODE_ENV === "development" && (
+                      <pre>{JSON.stringify(block, null, 2)}</pre>
+                    )}
                   </div>
                 ));
                 return <BlockComponent key={idx} {...block} />;
@@ -125,7 +245,8 @@ const LessonRenderer = ({
             </div>
           ) : (
             <div className="empty-content">
-              <p>No content available for this lesson</p>
+              <p>📝 No content available for this lesson yet.</p>
+              <p className="empty-hint">Check back soon as content is being generated.</p>
             </div>
           )}
         </section>

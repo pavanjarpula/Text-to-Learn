@@ -26,4 +26,6 @@ courseSchema.pre("remove", async function (next) {
   next();
 });
 
-module.exports = mongoose.model("Course", courseSchema);
+// Check if model already exists to prevent OverwriteModelError during hot reload
+module.exports =
+  mongoose.models.Course || mongoose.model("Course", courseSchema);

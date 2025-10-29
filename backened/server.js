@@ -12,6 +12,8 @@ const courseRoutes = require("./routes/courseRoutes");
 const moduleRoutes = require("./routes/moduleRoutes");
 const lessonRoutes = require("./routes/lessonRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const enrichmentRoutes = require("./routes/enrichment"); // NEW: Milestones 9, 10, 11
+const debugRoutes = require("./routes/debugRoutes"); // 🆕 DEBUG ROUTES
 
 // Connect to MongoDB
 connectDB();
@@ -66,6 +68,8 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/modules", moduleRoutes);
 app.use("/api/lessons", lessonRoutes);
+app.use("/api/enrichment", enrichmentRoutes); // NEW: Milestones 9, 10, 11
+app.use("/api/debug", debugRoutes); // 🆕 DEBUG ROUTES - FOR TESTING ONLY
 
 // ==================== DEBUG INFO ====================
 
@@ -74,10 +78,19 @@ console.log("  - Auth0 Domain:", process.env.AUTH0_DOMAIN || "NOT SET");
 console.log("  - Auth0 Audience:", process.env.AUTH0_AUDIENCE || "NOT SET");
 console.log("  - MongoDB:", process.env.MONGO_URI ? "CONFIGURED" : "NOT SET");
 console.log(
+  "  - OpenAI API:",
+  process.env.OPENAI_API_KEY ? "CONFIGURED" : "NOT SET"
+);
+console.log(
   "  - Gemini API:",
   process.env.GEMINI_API_KEY ? "CONFIGURED" : "NOT SET"
 );
+console.log(
+  "  - YouTube API:",
+  process.env.YOUTUBE_API_KEY ? "CONFIGURED" : "NOT SET"
+);
 console.log("  - Client Origins: Configured");
+console.log("  - Debug Routes: ENABLED at /api/debug");
 
 // ==================== ERROR HANDLING ====================
 
@@ -98,6 +111,12 @@ const server = app.listen(PORT, () => {
     ║  🌐 Port: ${PORT}                      ║
     ║  📍 URL: http://localhost:${PORT}      ║
     ║  🔧 API: http://localhost:${PORT}/api  ║
+    ║                                        ║
+    ║  📚 Features:                          ║
+    ║  🎬 YouTube: /api/enrichment/videos   ║
+    ║  🌐 Hinglish: /api/enrichment/translate ║
+    ║  📄 PDF: /api/enrichment/export       ║
+    ║  🐛 Debug: /api/debug (DEV ONLY)      ║
     ╚════════════════════════════════════════╝
   `);
 });

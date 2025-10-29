@@ -1,232 +1,285 @@
-// backend/services/validator.js
-
-const Ajv = require("ajv");
-const ajv = new Ajv({ allErrors: true });
+// backend/services/validator.js - COMPREHENSIVE VALIDATION & SANITIZATION
 
 /**
- * Safely parse JSON from LLM response
- * Handles markdown code fences, extra whitespace, and malformed JSON
- * @param {string} text Raw text from LLM
- * @returns {Object} Parsed JSON object
+ * Safe JSON parsing with error handling
  */
 function safeJsonParse(text) {
-  if (!text || typeof text !== "string") {
-    throw new Error("Invalid input: expected non-empty string");
-  }
+  if (!text) throw new Error("Empty response from LLM");
 
   try {
-    // Try direct parsing first
-    return JSON.parse(text);
-  } catch (err) {
-    console.warn("⚠️  Direct JSON parse failed, attempting recovery...");
-  }
-
-  // Remove markdown code fences
-  let cleaned = text
-    .replace(/```json\n?/g, "")
-    .replace(/```\n?/g, "")
-    .replace(/^```/gm, "");
-
-  try {
-    return JSON.parse(cleaned);
-  } catch (err) {
-    console.warn("⚠️  Cleaned JSON parse failed, extracting JSON object...");
-  }
-
-  // Try to extract JSON object from text
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      return JSON.parse(jsonMatch[0]);
-    } catch (err) {
-      console.error("❌ Failed to parse extracted JSON");
+    // Remove markdown code fences if present
+    let cleaned = text.trim();
+    if (cleaned.startsWith("```json")) {
+      cleaned = cleaned.replace(/^```json\s*/, "").replace(/```\s*$/, "");
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```\s*/, "").replace(/```\s*$/, "");
     }
-  }
 
-  // Try to extract JSON array
-  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
-    try {
-      return JSON.parse(arrayMatch[0]);
-    } catch (err) {
-      console.error("❌ Failed to parse extracted JSON array");
-    }
+    const parsed = JSON.parse(cleaned);
+    return parsed;
+  } catch (error) {
+    console.error("❌ JSON Parse Error:", error.message);
+    console.error("Text received:", text.substring(0, 200));
+    throw new Error(`Failed to parse JSON: ${error.message}`);
   }
-
-  throw new Error(
-    "Failed to parse JSON from LLM response: " + text.slice(0, 100)
-  );
 }
 
-// ==================== JSON SCHEMAS ====================
+/**
+ * Sanitize and fix MCQ blocks - CRITICAL FIX
+ */
+function sanitizeMCQBlock(mcq, blockIndex) {
+  const sanitized = {
+    type: "mcq",
+    question: "",
+    options: [],
+    answer: 0,
+    explanation: "",
+  };
+
+  // 🔧 FIX: Handle question from various field names
+  const question = mcq.question || mcq.query || mcq.text || "";
+  sanitized.question = String(question).trim().substring(0, 500); // Limit length
+
+  if (!sanitized.question) {
+    console.warn(`⚠️  MCQ Block ${blockIndex}: Empty question`);
+    return null; // REJECT invalid blocks
+  }
+
+  // 🔧 FIX: Ensure exactly 4 options
+  const options = Array.isArray(mcq.options) ? mcq.options : [];
+  sanitized.options = options
+    .slice(0, 4) // Take max 4
+    .map((opt) =>
+      String(opt || "")
+        .trim()
+        .substring(0, 200)
+    )
+    .filter((opt) => opt.length > 0);
+
+  // Pad with placeholder options if needed
+  while (sanitized.options.length < 4) {
+    sanitized.options.push(`Option ${sanitized.options.length + 1}`);
+  }
+
+  // 🔧 FIX: Validate answer index
+  const answerIndex = Number(mcq.answer);
+  if (Number.isInteger(answerIndex) && answerIndex >= 0 && answerIndex <= 3) {
+    sanitized.answer = answerIndex;
+  } else {
+    console.warn(`⚠️  MCQ Block ${blockIndex}: Invalid answer index, using 0`);
+    sanitized.answer = 0;
+  }
+
+  // 🔧 FIX: Handle explanation
+  sanitized.explanation = String(mcq.explanation || "")
+    .trim()
+    .substring(0, 1000);
+
+  if (!sanitized.explanation) {
+    sanitized.explanation = `The correct answer is option ${String.fromCharCode(
+      65 + sanitized.answer
+    )}.`;
+  }
+
+  return sanitized;
+}
 
 /**
- * Course schema - defines structure for course generation
+ * Sanitize and fix code blocks - CRITICAL FIX
  */
-const courseSchema = {
-  type: "object",
-  required: ["title", "description", "modules"],
-  properties: {
-    title: { type: "string", minLength: 1 },
-    description: { type: "string", minLength: 10 },
-    tags: {
-      type: "array",
-      items: { type: "string" },
-      minItems: 1,
-      maxItems: 10,
-    },
-    modules: {
-      type: "array",
-      items: {
-        type: "object",
-        required: ["title", "lessons"],
-        properties: {
-          title: { type: "string", minLength: 1 },
-          lessons: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            minItems: 3,
-            maxItems: 6,
-          },
-        },
-      },
-      minItems: 3,
-      maxItems: 6,
-    },
-  },
-};
+function sanitizeCodeBlock(codeBlock, blockIndex) {
+  const sanitized = {
+    type: "code",
+    language: "javascript",
+    code: "",
+  };
+
+  // 🔧 FIX: Handle language variations
+  sanitized.language = String(
+    codeBlock.language || codeBlock.lang || "javascript"
+  )
+    .toLowerCase()
+    .trim();
+
+  // 🔧 FIX: Get code from various field names
+  let code = codeBlock.code || codeBlock.content || codeBlock.text || "";
+  code = String(code).trim();
+
+  // 🔧 FIX: Handle escaped newlines from JSON
+  if (typeof code === "string") {
+    code = code
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\r/g, "\r")
+      .replace(/\\\\/g, "\\");
+  }
+
+  sanitized.code = code.substring(0, 5000); // Limit to 5KB
+
+  if (!sanitized.code || sanitized.code.trim().length === 0) {
+    console.warn(`⚠️  Code Block ${blockIndex}: Empty code content`);
+    return null; // REJECT invalid blocks
+  }
+
+  return sanitized;
+}
 
 /**
- * Lesson schema - defines structure for lesson content
+ * Sanitize content blocks
  */
-const lessonSchema = {
-  type: "object",
-  required: ["title", "objectives", "content"],
-  properties: {
-    title: { type: "string", minLength: 1 },
-    objectives: {
-      type: "array",
-      items: { type: "string", minLength: 10 },
-      minItems: 3,
-      maxItems: 6,
-    },
-    content: {
-      type: "array",
-      items: {
-        type: "object",
-        required: ["type"],
-        properties: {
-          type: {
-            type: "string",
-            enum: ["heading", "paragraph", "code", "video", "mcq"],
-          },
-          text: { type: ["string", "null"] },
-          level: { type: ["number", "null"] },
-          language: { type: ["string", "null"] },
-          code: { type: ["string", "null"] },
-          query: { type: ["string", "null"] },
-          question: { type: ["string", "null"] },
-          options: {
-            type: ["array", "null"],
-            items: { type: "string" },
-          },
-          answer: { type: ["number", "null"] },
-          explanation: { type: ["string", "null"] },
-        },
-      },
-      minItems: 10,
-      maxItems: 20,
-    },
-  },
-};
+function sanitizeContentBlock(block, blockIndex) {
+  if (!block || !block.type) {
+    console.warn(`⚠️  Block ${blockIndex}: Missing type`);
+    return null;
+  }
+
+  const blockType = String(block.type).toLowerCase().trim();
+
+  // Route to appropriate sanitizer
+  if (blockType === "mcq") {
+    return sanitizeMCQBlock(block, blockIndex);
+  }
+
+  if (blockType === "code") {
+    return sanitizeCodeBlock(block, blockIndex);
+  }
+
+  if (blockType === "heading") {
+    return {
+      type: "heading",
+      text: String(block.text || "")
+        .trim()
+        .substring(0, 200),
+      level: Number(block.level) || 1,
+    };
+  }
+
+  if (blockType === "paragraph") {
+    return {
+      type: "paragraph",
+      text: String(block.text || "")
+        .trim()
+        .substring(0, 5000),
+    };
+  }
+
+  if (blockType === "video") {
+    return {
+      type: "video",
+      query: String(block.query || "")
+        .trim()
+        .substring(0, 200),
+    };
+  }
+
+  console.warn(`⚠️  Block ${blockIndex}: Unknown type "${blockType}"`);
+  return null;
+}
 
 /**
- * Compile validators
+ * Sanitize entire lesson
  */
-const validateCourse = ajv.compile(courseSchema);
-const validateLesson = ajv.compile(lessonSchema);
+function sanitizeLesson(lesson) {
+  if (!lesson || typeof lesson !== "object") {
+    throw new Error("Invalid lesson object");
+  }
+
+  // Sanitize objectives
+  const objectives = Array.isArray(lesson.objectives)
+    ? lesson.objectives
+        .map((obj) =>
+          String(obj || "")
+            .trim()
+            .substring(0, 500)
+        )
+        .filter((obj) => obj.length > 0)
+    : [];
+
+  // Sanitize content blocks
+  const contentBlocks = Array.isArray(lesson.content) ? lesson.content : [];
+  const sanitizedContent = contentBlocks
+    .map((block, idx) => sanitizeContentBlock(block, idx))
+    .filter((block) => block !== null); // Remove invalid blocks
+
+  // Validate minimum content
+  if (sanitizedContent.length === 0) {
+    console.warn("⚠️  Lesson has no valid content blocks");
+  }
+
+  const mcqCount = sanitizedContent.filter((b) => b.type === "mcq").length;
+  const codeCount = sanitizedContent.filter((b) => b.type === "code").length;
+
+  if (mcqCount === 0) {
+    console.warn("⚠️  Lesson has no MCQ blocks");
+  }
+  if (codeCount === 0) {
+    console.warn("⚠️  Lesson has no code blocks");
+  }
+
+  return {
+    title: String(lesson.title || "Untitled")
+      .trim()
+      .substring(0, 200),
+    objectives,
+    content: sanitizedContent,
+  };
+}
 
 /**
  * Validate course structure
- * @param {Object} course Course object to validate
- * @returns {Object} { valid: boolean, errors: Array }
  */
-function validateCourseStructure(course) {
-  const valid = validateCourse(course);
-  return {
-    valid,
-    errors: valid ? [] : validateCourse.errors,
-  };
+function validateCourse(course) {
+  if (!course || typeof course !== "object") {
+    console.error("❌ Course is not an object");
+    return false;
+  }
+
+  if (!course.title || typeof course.title !== "string") {
+    console.error("❌ Course missing valid title");
+    return false;
+  }
+
+  if (!Array.isArray(course.modules)) {
+    console.error("❌ Course.modules is not an array");
+    return false;
+  }
+
+  return true;
 }
 
 /**
  * Validate lesson structure
- * @param {Object} lesson Lesson object to validate
- * @returns {Object} { valid: boolean, errors: Array }
  */
-function validateLessonStructure(lesson) {
-  const valid = validateLesson(lesson);
-
-  // Additional checks for MCQ blocks
-  if (valid && Array.isArray(lesson.content)) {
-    const mcqBlocks = lesson.content.filter((b) => b.type === "mcq");
-    for (const mcq of mcqBlocks) {
-      if (!mcq.question || mcq.question.trim() === "") {
-        return {
-          valid: false,
-          errors: [
-            {
-              message: "MCQ block missing question field or question is empty",
-            },
-          ],
-        };
-      }
-      if (!Array.isArray(mcq.options) || mcq.options.length !== 4) {
-        return {
-          valid: false,
-          errors: [{ message: "MCQ block must have exactly 4 options" }],
-        };
-      }
-      if (typeof mcq.answer !== "number" || mcq.answer < 0 || mcq.answer > 3) {
-        return {
-          valid: false,
-          errors: [{ message: "MCQ answer must be a number between 0-3" }],
-        };
-      }
-      if (!mcq.explanation || mcq.explanation.trim() === "") {
-        return {
-          valid: false,
-          errors: [{ message: "MCQ block missing explanation" }],
-        };
-      }
-    }
+function validateLesson(lesson) {
+  if (!lesson || typeof lesson !== "object") {
+    console.error("❌ Lesson is not an object");
+    return false;
   }
 
-  return {
-    valid,
-    errors: valid ? [] : validateLesson.errors,
-  };
-}
+  if (!lesson.title || typeof lesson.title !== "string") {
+    console.error("❌ Lesson missing valid title");
+    return false;
+  }
 
-/**
- * Log validation errors
- * @param {Array} errors AJV errors array
- */
-function logValidationErrors(errors) {
-  if (!Array.isArray(errors) || errors.length === 0) return;
+  if (!Array.isArray(lesson.objectives)) {
+    console.error("❌ Lesson.objectives is not an array");
+    return false;
+  }
 
-  console.error("❌ Validation Errors:");
-  errors.forEach((err) => {
-    console.error(`   - ${err.instancePath || "root"}: ${err.message}`);
-  });
+  if (!Array.isArray(lesson.content)) {
+    console.error("❌ Lesson.content is not an array");
+    return false;
+  }
+
+  return true;
 }
 
 module.exports = {
   safeJsonParse,
-  validateCourse: validateCourseStructure,
-  validateLesson: validateLessonStructure,
-  logValidationErrors,
-  // Export raw validators for advanced usage
-  validateCourseRaw: validateCourse,
-  validateLessonRaw: validateLesson,
+  sanitizeLesson,
+  sanitizeContentBlock,
+  sanitizeMCQBlock,
+  sanitizeCodeBlock,
+  validateCourse,
+  validateLesson,
 };

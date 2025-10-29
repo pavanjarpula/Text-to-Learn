@@ -1,32 +1,46 @@
-/* ==================== FILE 2: backend/routes/aiRoutes.js (FIXED) ==================== */
+// backend/routes/aiRoutes.js - UPDATED
 
 const express = require("express");
+const router = express.Router();
 const {
   generateCourseHandler,
   generateLessonHandler,
 } = require("../controllers/aiController");
 
-// Optional: Require auth middleware if you want to protect these routes
-// const checkJwt = require("../middlewares/authMiddleware");
-// const attachUser = require("../middlewares/attachUser");
-
-const router = express.Router();
-
-// Routes - Currently public (can be protected if needed)
-// To protect: add checkJwt and attachUser middleware
-
 /**
  * POST /api/ai/generate-course
- * Generate a complete course from a topic prompt
- * Body: { topic: "string" }
+ * Generate a complete course from a topic
+ *
+ * Request body:
+ * {
+ *   "topic": "Python Basics"
+ * }
+ *
+ * Response: Complete course with modules and lessons
  */
-router.post("/generate-course", generateCourseHandler);
+router.post("/generate-course", async (req, res, next) => {
+  console.log("\n🔵 [AI Routes] POST /api/ai/generate-course");
+  console.log("Request body:", req.body);
+  await generateCourseHandler(req, res, next);
+});
 
 /**
  * POST /api/ai/generate-lesson
- * Generate a specific lesson
- * Body: { courseTitle: "string", moduleTitle: "string", lessonTitle: "string" }
+ * Generate a single lesson with content blocks
+ *
+ * Request body:
+ * {
+ *   "courseTitle": "Python Basics",
+ *   "moduleTitle": "Introduction",
+ *   "lessonTitle": "Variables and Data Types"
+ * }
+ *
+ * Response: Lesson with objectives and content blocks
  */
-router.post("/generate-lesson", generateLessonHandler);
+router.post("/generate-lesson", async (req, res, next) => {
+  console.log("\n🔵 [AI Routes] POST /api/ai/generate-lesson");
+  console.log("Request body:", req.body);
+  await generateLessonHandler(req, res, next);
+});
 
 module.exports = router;

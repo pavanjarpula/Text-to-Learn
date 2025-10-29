@@ -1,19 +1,46 @@
-import React, { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Copy, Check, AlertCircle } from "lucide-react";
 import "./CodeBlock.css";
 
-const CodeBlock = ({ language = "code", text = "" }) => {
+const CodeBlock = ({ language = "javascript", code = "", text = "" }) => {
   const [copied, setCopied] = useState(false);
 
+  // Use 'code' field first, fallback to 'text' field
+  let codeContent = code || text || "";
+
+  // 🔧 FIX: Handle escaped newlines from backend
+  if (typeof codeContent === "string") {
+    codeContent = codeContent
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\r/g, "\r")
+      .trim();
+  }
+
+  // 🔍 Enhanced debug logging
+  useEffect(() => {
+    console.group("📝 CodeBlock Debug Info");
+    console.log("Language:", language);
+    console.log("Code provided (from props):", !!code);
+    console.log("Text provided (from props):", !!text);
+    console.log("Code length:", codeContent.length);
+    console.log("Is empty:", codeContent === "");
+    console.log("First 50 chars:", codeContent.substring(0, 50));
+    console.log("Full content:", codeContent);
+    console.groupEnd();
+  }, [code, text, codeContent, language]);
+
+  const isEmpty = !codeContent || codeContent === "";
+
   const handleCopy = async () => {
+    if (isEmpty) return;
+
     try {
-      // Use modern Clipboard API first
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(codeContent);
       } else {
-        // Fallback for non-secure contexts
         const textarea = document.createElement("textarea");
-        textarea.value = text;
+        textarea.value = codeContent;
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);
@@ -25,9 +52,26 @@ const CodeBlock = ({ language = "code", text = "" }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      console.error("❌ Failed to copy:", err);
     }
   };
+
+  // 🔴 Empty state
+  if (isEmpty) {
+    return (
+      <div className="code-block-container code-block-empty">
+        <div className="code-block-header">
+          <span className="code-language">{language.toUpperCase()}</span>
+          <span className="code-status-badge">Empty</span>
+        </div>
+        <div className="code-block-empty-state">
+          <AlertCircle size={20} />
+          <p>No code content available for this block</p>
+          <small>Check that the backend is sending the 'code' or 'text' field with actual content</small>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="code-block-container">
@@ -53,7 +97,7 @@ const CodeBlock = ({ language = "code", text = "" }) => {
         </button>
       </div>
       <pre className="code-block-pre">
-        <code className="code-block-code">{text}</code>
+        <code className="code-block-code">{codeContent}</code>
       </pre>
     </div>
   );

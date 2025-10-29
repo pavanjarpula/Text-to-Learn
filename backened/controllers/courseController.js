@@ -1,7 +1,10 @@
+// backend/controllers/courseController.js - UPDATED WITH FIXES
+
 const Course = require("../models/course");
 const Module = require("../models/Module");
 const Lesson = require("../models/Lesson");
 const User = require("../models/user");
+const { validateLesson, sanitizeLesson } = require("../services/validator");
 
 /**
  * Create a new course with optional modules & lessons
@@ -60,10 +63,13 @@ exports.createCourse = async (req, res, next) => {
 
 /**
  * Get a single course with fully populated modules and lessons (including content)
+ * 🔧 UPDATED: Includes validation logging
  */
 exports.getCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    console.log("📖 Fetching course:", id);
 
     const course = await Course.findById(id)
       .populate({
@@ -72,16 +78,36 @@ exports.getCourse = async (req, res, next) => {
         populate: {
           path: "lessons",
           options: { sort: { order: 1 } },
-          select: "title objectives content order", // Make sure content is included
+          select: "title objectives content order",
         },
       })
-      .lean(); // lean improves performance and returns plain JSON
+      .lean();
 
-    if (!course) return res.status(404).json({ message: "Course not found" });
+    if (!course) {
+      console.warn("❌ Course not found:", id);
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // 🔍 Debug: Log content structure
+    console.log("📊 Course content structure:");
+    course.modules?.forEach((mod, modIdx) => {
+      mod.lessons?.forEach((lesson, lessonIdx) => {
+        const contentStats = {
+          total: lesson.content?.length || 0,
+          mcq: lesson.content?.filter((b) => b.type === "mcq").length || 0,
+          code: lesson.content?.filter((b) => b.type === "code").length || 0,
+          video: lesson.content?.filter((b) => b.type === "video").length || 0,
+        };
+        console.log(
+          `  Module ${modIdx} → Lesson ${lessonIdx} (${lesson.title}):`,
+          contentStats
+        );
+      });
+    });
 
     res.json(course);
   } catch (err) {
-    console.error("Get Course Error:", err);
+    console.error("❌ Get Course Error:", err);
     next(err);
   }
 };
@@ -94,12 +120,16 @@ exports.getUserCourses = async (req, res, next) => {
     const userId = req.user?.sub || req.auth?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
+    console.log("📚 Fetching user courses for:", userId);
+
     const courses = await Course.find({ creator: userId })
       .select("title description tags createdAt updatedAt")
       .lean();
 
+    console.log(`✅ Found ${courses.length} courses`);
     res.json(courses);
   } catch (err) {
+    console.error("❌ Get User Courses Error:", err);
     next(err);
   }
 };
@@ -109,12 +139,16 @@ exports.getUserCourses = async (req, res, next) => {
  */
 exports.getAllCourses = async (req, res, next) => {
   try {
+    console.log("📚 Fetching all public courses");
+
     const courses = await Course.find()
       .select("title description tags createdAt updatedAt")
       .lean();
 
+    console.log(`✅ Found ${courses.length} public courses`);
     res.json(courses);
   } catch (err) {
+    console.error("❌ Get All Courses Error:", err);
     next(err);
   }
 };
@@ -125,18 +159,54 @@ exports.getAllCourses = async (req, res, next) => {
 exports.deleteCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    console.log("🗑️  Deleting course:", id);
+
     const course = await Course.findById(id);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+    if (!course) {
+      console.warn("❌ Course not found:", id);
+      return res.status(404).json({ message: "Course not found" });
+    }
 
     const userId = req.user?.sub || req.auth?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    if (course.creator !== userId)
+    if (course.creator !== userId) {
+      console.warn("❌ Unauthorized delete attempt for course:", id);
       return res.status(403).json({ message: "Not authorized" });
+    }
 
     await course.deleteOne();
+    console.log("✅ Course deleted:", id);
     res.json({ message: "Course deleted" });
   } catch (err) {
+    console.error("❌ Delete Course Error:", err);
+    next(err);
+  }
+};
+
+/**
+ * 🆕 LEGACY: Update a course (optional)
+ */
+exports.updateCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, description, tags } = req.body;
+
+    const course = await Course.findByIdAndUpdate(
+      id,
+      { title, description, tags },
+      { new: true }
+    );
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    console.log("✅ Course updated:", id);
+    res.json(course);
+  } catch (err) {
+    console.error("❌ Update Course Error:", err);
     next(err);
   }
 };

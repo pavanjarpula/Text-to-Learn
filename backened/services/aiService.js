@@ -1,4 +1,4 @@
-// backend/services/aiService.js
+// backend/services/aiService.js - FIXED VERSION
 
 require("dotenv").config();
 const { OpenAI } = require("openai");
@@ -6,7 +6,12 @@ const {
   generateCoursePrompt,
   generateLessonPrompt,
 } = require("./promptTemplates");
-const { safeJsonParse } = require("./validator");
+const {
+  safeJsonParse,
+  sanitizeLesson,
+  validateCourse,
+  validateLesson,
+} = require("./validator");
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("❌ OPENAI_API_KEY missing in .env");
@@ -22,8 +27,6 @@ const SYSTEM_INSTRUCTION =
 
 /**
  * Calls the OpenAI API with a single prompt
- * @param {string} prompt The text prompt to send to the model
- * @returns {Promise<string>} The generated JSON response
  */
 async function callLLM(prompt) {
   console.log("🧠 Calling OpenAI API...");
@@ -40,8 +43,8 @@ async function callLLM(prompt) {
           content: prompt,
         },
       ],
-      response_format: { type: "json_object" }, // Force JSON output
-      temperature: 0.7, // Balanced creativity and consistency
+      response_format: { type: "json_object" },
+      temperature: 0.7,
     });
 
     const text = response.choices[0].message.content;
@@ -58,8 +61,6 @@ async function callLLM(prompt) {
 
 /**
  * Generate a complete course structure
- * @param {string} topic The course topic
- * @returns {Promise<Object>} Course structure with modules and lessons
  */
 exports.generateCourse = async (topic) => {
   try {
@@ -69,7 +70,7 @@ exports.generateCourse = async (topic) => {
     const parsed = safeJsonParse(raw);
 
     // Validate course structure
-    if (!parsed.title || !parsed.modules) {
+    if (!validateCourse(parsed)) {
       throw new Error("Invalid course structure from LLM");
     }
 
@@ -87,10 +88,6 @@ exports.generateCourse = async (topic) => {
 
 /**
  * Generate detailed lesson content
- * @param {string} courseTitle The course title for context
- * @param {string} moduleTitle The module title for context
- * @param {string} lessonTitle The lesson title to generate content for
- * @returns {Promise<Object>} Lesson with objectives and content blocks
  */
 exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
   try {
@@ -99,48 +96,75 @@ exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
     );
     const prompt = generateLessonPrompt(courseTitle, moduleTitle, lessonTitle);
     const raw = await callLLM(prompt);
+
+    console.log(
+      "📋 Raw LLM response (first 300 chars):",
+      raw.substring(0, 300)
+    );
+
     const parsed = safeJsonParse(raw);
 
-    // Validate lesson structure
-    if (
-      !parsed.title ||
-      !Array.isArray(parsed.objectives) ||
-      !Array.isArray(parsed.content)
-    ) {
+    console.log("✅ JSON parsed successfully");
+
+    // Validate basic structure
+    if (!validateLesson(parsed)) {
       throw new Error("Invalid lesson structure from LLM");
     }
 
-    // Count content blocks by type
-    const contentStats = {
-      total: parsed.content.length,
-      mcq: parsed.content.filter((b) => b.type === "mcq").length,
-      code: parsed.content.filter((b) => b.type === "code").length,
-      video: parsed.content.filter((b) => b.type === "video").length,
-      heading: parsed.content.filter((b) => b.type === "heading").length,
-      paragraph: parsed.content.filter((b) => b.type === "paragraph").length,
+    console.log("✅ Basic validation passed");
+
+    // 🔧 CRITICAL: Sanitize and fix the lesson data
+    console.log("🧹 Sanitizing lesson content...");
+    const sanitized = sanitizeLesson(parsed);
+
+    console.log("✅ Lesson sanitized successfully");
+
+    // Count and report
+    const stats = {
+      total: sanitized.content.length,
+      mcq: sanitized.content.filter((b) => b.type === "mcq").length,
+      code: sanitized.content.filter((b) => b.type === "code").length,
+      video: sanitized.content.filter((b) => b.type === "video").length,
+      heading: sanitized.content.filter((b) => b.type === "heading").length,
+      paragraph: sanitized.content.filter((b) => b.type === "paragraph").length,
     };
 
-    console.log("✅ Lesson generated successfully:", {
-      title: parsed.title,
-      objectivesCount: parsed.objectives.length,
-      ...contentStats,
-    });
+    console.log("📊 Lesson content stats:", stats);
 
-    // Log any blocks without questions for MCQ validation
-    const emptyMCQs = parsed.content.filter(
-      (b) => b.type === "mcq" && !b.question
-    );
-    if (emptyMCQs.length > 0) {
-      console.warn(
-        `⚠️  Warning: ${emptyMCQs.length} MCQ blocks missing questions`
-      );
+    // Check for critical content
+    if (stats.mcq < 1) {
+      console.warn("⚠️  WARNING: Lesson has fewer than 1 MCQ block");
+    }
+    if (stats.code < 1) {
+      console.warn("⚠️  WARNING: Lesson has fewer than 1 code block");
     }
 
-    return parsed;
+    // Log first MCQ for debugging
+    const firstMCQ = sanitized.content.find((b) => b.type === "mcq");
+    if (firstMCQ) {
+      console.log("✅ First MCQ block:", {
+        question: firstMCQ.question.substring(0, 50) + "...",
+        optionsCount: firstMCQ.options.length,
+        answer: firstMCQ.answer,
+      });
+    }
+
+    // Log first code block for debugging
+    const firstCode = sanitized.content.find((b) => b.type === "code");
+    if (firstCode) {
+      console.log("✅ First code block:", {
+        language: firstCode.language,
+        codeLength: firstCode.code.length,
+        preview: firstCode.code.substring(0, 50) + "...",
+      });
+    }
+
+    return sanitized;
   } catch (error) {
     console.error("❌ Error generating lesson:", error.message);
+    console.error("Stack:", error.stack);
     throw error;
   }
 };
 
-module.exports.callLLM = callLLM; // Export for testing if needed
+module.exports.callLLM = callLLM;

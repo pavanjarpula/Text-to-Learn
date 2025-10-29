@@ -1,56 +1,146 @@
+// backend/models/Lesson.js - FIXED MODEL
+
 const mongoose = require("mongoose");
 
+// Content block schema - flexible to support all block types
 const contentBlockSchema = new mongoose.Schema(
   {
-    type: { type: String, required: true }, // e.g., heading, paragraph, code, video, mcq
-    // flexible payload: keep general fields
-    text: String,
-    language: String, // for code blocks
-    url: String, // for video
-    query: String, // for video query
-    options: [String], // mcq options
-    answer: mongoose.Schema.Types.Mixed, // index or string (allow mixed)
-    explanation: String,
-    // general free-form object to support new block types without schema changes
-    meta: { type: mongoose.Schema.Types.Mixed },
+    type: {
+      type: String,
+      enum: ["heading", "paragraph", "code", "video", "mcq"],
+      required: true,
+    },
+    // Heading fields
+    text: {
+      type: String,
+      default: "",
+    },
+    level: {
+      type: Number,
+      default: 1,
+    },
+    // Paragraph fields
+    // (uses 'text' field above)
+
+    // Code block fields
+    language: {
+      type: String,
+      default: "javascript",
+    },
+    code: {
+      type: String,
+      default: "",
+    },
+
+    // Video block fields
+    query: {
+      type: String,
+      default: "",
+    },
+    videoId: {
+      type: String,
+      default: "",
+    },
+    videoUrl: {
+      type: String,
+      default: "",
+    },
+
+    // MCQ block fields
+    question: {
+      type: String,
+      default: "",
+    },
+    options: {
+      type: [String],
+      default: [],
+    },
+    answer: {
+      type: Number,
+      default: 0,
+    },
+    explanation: {
+      type: String,
+      default: "",
+    },
   },
-  { _id: false }
+  { _id: false } // Don't create separate IDs for content blocks
 );
 
 const lessonSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true },
-    objectives: [{ type: String }],
-    content: { type: [contentBlockSchema], required: true, default: [] }, // structured blocks
-    isEnriched: { type: Boolean, default: false },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    objectives: {
+      type: [String],
+      default: [],
+    },
+    // 🔧 FIXED: Make sure content is properly defined
+    content: {
+      type: [contentBlockSchema],
+      default: [],
+      required: false,
+    },
     module: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Module",
       required: true,
     },
-    order: { type: Number, default: 0 }, // ordering within module
+    order: {
+      type: Number,
+      default: 0,
+    },
+    isEnriched: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-// After saving lesson, ensure module.lessons contains reference (if not present)
-lessonSchema.post("save", async function (doc, next) {
-  const Module = mongoose.model("Module");
-  await Module.updateOne(
-    { _id: doc.module },
-    { $addToSet: { lessons: doc._id } }
-  );
+// 🔍 Debug: Log when lesson is saved
+lessonSchema.pre("save", function (next) {
+  console.log("💾 Lesson being saved:", {
+    title: this.title,
+    contentBlocksCount: this.content?.length || 0,
+    objectives: this.objectives?.length || 0,
+  });
+
+  if (this.content && this.content.length > 0) {
+    console.log("📊 Content blocks breakdown:");
+    this.content.forEach((block, idx) => {
+      if (block.type === "mcq") {
+        console.log(
+          `  Block ${idx} (MCQ): question="${
+            block.question?.substring(0, 30) || "(empty)"
+          }..."`
+        );
+      } else if (block.type === "code") {
+        console.log(`  Block ${idx} (CODE): ${block.code?.length || 0} chars`);
+      } else {
+        console.log(`  Block ${idx} (${block.type}): OK`);
+      }
+    });
+  }
+
   next();
 });
 
-// When removing lesson, remove ref from module
-lessonSchema.pre("remove", async function (next) {
-  const Module = mongoose.model("Module");
-  await Module.updateOne(
-    { _id: this.module },
-    { $pull: { lessons: this._id } }
-  );
-  next();
+// 🔍 Debug: Log when lesson is found
+lessonSchema.post("findOne", function (doc) {
+  if (doc) {
+    console.log("📖 Lesson loaded from DB:", {
+      title: doc.title,
+      contentBlocksCount: doc.content?.length || 0,
+    });
+  }
 });
 
-module.exports = mongoose.model("Lesson", lessonSchema);
+const Lesson = mongoose.model("Lesson", lessonSchema);
+
+module.exports = Lesson;

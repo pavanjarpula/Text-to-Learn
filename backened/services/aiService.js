@@ -1,4 +1,4 @@
-// backend/services/aiService.js - FIXED VERSION
+// backend/services/aiService.js - UPDATED WITH CONTEXT
 
 require("dotenv").config();
 const { OpenAI } = require("openai");
@@ -17,10 +17,7 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error("❌ OPENAI_API_KEY missing in .env");
 }
 
-// Initialize OpenAI client
 const openai = new OpenAI();
-
-// Using gpt-4o-mini for faster, more reliable JSON output
 const MODEL = "gpt-4o-mini";
 const SYSTEM_INSTRUCTION =
   "You are a specialized course generator and expert educator. Your responses MUST be valid, unadorned JSON that strictly adheres to the requested schema. Do not include any surrounding text, markdown, code fences, or explanations. Return ONLY the raw JSON object.";
@@ -48,7 +45,6 @@ async function callLLM(prompt) {
     });
 
     const text = response.choices[0].message.content;
-
     console.log(
       "✅ OpenAI response received (length: " + (text ? text.length : 0) + ")"
     );
@@ -69,7 +65,6 @@ exports.generateCourse = async (topic) => {
     const raw = await callLLM(prompt);
     const parsed = safeJsonParse(raw);
 
-    // Validate course structure
     if (!validateCourse(parsed)) {
       throw new Error("Invalid course structure from LLM");
     }
@@ -87,14 +82,36 @@ exports.generateCourse = async (topic) => {
 };
 
 /**
- * Generate detailed lesson content
+ * Generate detailed lesson content with context awareness
+ * Now accepts moduleIndex, lessonIndex, and course structure info
  */
-exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
+exports.generateLesson = async (
+  courseTitle,
+  moduleTitle,
+  lessonTitle,
+  moduleIndex = 0,
+  lessonIndex = 0,
+  totalModules = 4,
+  totalLessons = 16
+) => {
   try {
     console.log(
-      `📝 Generating lesson: "${lessonTitle}" in module: "${moduleTitle}"`
+      `📝 Generating lesson: "${lessonTitle}" (Module ${
+        moduleIndex + 1
+      }/${totalModules}, Lesson ${lessonIndex + 1}/${totalLessons})`
     );
-    const prompt = generateLessonPrompt(courseTitle, moduleTitle, lessonTitle);
+
+    // Generate prompt with full context
+    const prompt = generateLessonPrompt(
+      courseTitle,
+      moduleTitle,
+      lessonTitle,
+      moduleIndex,
+      lessonIndex,
+      totalModules,
+      totalLessons
+    );
+
     const raw = await callLLM(prompt);
 
     console.log(
@@ -103,23 +120,20 @@ exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
     );
 
     const parsed = safeJsonParse(raw);
-
     console.log("✅ JSON parsed successfully");
 
-    // Validate basic structure
     if (!validateLesson(parsed)) {
       throw new Error("Invalid lesson structure from LLM");
     }
 
     console.log("✅ Basic validation passed");
 
-    // 🔧 CRITICAL: Sanitize and fix the lesson data
+    // Sanitize and fix
     console.log("🧹 Sanitizing lesson content...");
     const sanitized = sanitizeLesson(parsed);
-
     console.log("✅ Lesson sanitized successfully");
 
-    // Count and report
+    // Stats and reporting
     const stats = {
       total: sanitized.content.length,
       mcq: sanitized.content.filter((b) => b.type === "mcq").length,
@@ -127,19 +141,12 @@ exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
       video: sanitized.content.filter((b) => b.type === "video").length,
       heading: sanitized.content.filter((b) => b.type === "heading").length,
       paragraph: sanitized.content.filter((b) => b.type === "paragraph").length,
+      depth: sanitized.depth || "unknown",
     };
 
     console.log("📊 Lesson content stats:", stats);
 
-    // Check for critical content
-    if (stats.mcq < 1) {
-      console.warn("⚠️  WARNING: Lesson has fewer than 1 MCQ block");
-    }
-    if (stats.code < 1) {
-      console.warn("⚠️  WARNING: Lesson has fewer than 1 code block");
-    }
-
-    // Log first MCQ for debugging
+    // Log first MCQ
     const firstMCQ = sanitized.content.find((b) => b.type === "mcq");
     if (firstMCQ) {
       console.log("✅ First MCQ block:", {
@@ -149,7 +156,7 @@ exports.generateLesson = async (courseTitle, moduleTitle, lessonTitle) => {
       });
     }
 
-    // Log first code block for debugging
+    // Log first code block
     const firstCode = sanitized.content.find((b) => b.type === "code");
     if (firstCode) {
       console.log("✅ First code block:", {

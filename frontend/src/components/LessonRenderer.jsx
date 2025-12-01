@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Download, BookmarkPlus, Share2, ArrowUp, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  BookmarkPlus,
+  Share2,
+  ArrowUp,
+  Check,
+} from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { saveLesson, markLessonComplete } from "../utils/api";
+import {
+  saveLessonWithContext,
+  markLessonComplete,
+} from "../utils/api";
 
 // Import all block components
 import HeadingBlock from "./blocks/HeadingBlock";
@@ -10,7 +21,6 @@ import CodeBlock from "./blocks/CodeBlock";
 import VideoBlock from "./blocks/VideoBlock";
 import MCQBlock from "./blocks/MCQBlock";
 
-// Import new utility components
 import HinglishTranslator from "./HinglishTranslator";
 import PDFExporter from "./PDFExporter";
 
@@ -28,8 +38,9 @@ const LessonRenderer = ({
   lesson,
   module,
   course,
-  moduleIdx,
-  lessonIdx,
+  moduleIdx = 0,
+  lessonIdx = 0,
+  totalLessons = 1,
   onPrevious,
   onNext,
   objectives = [],
@@ -40,6 +51,7 @@ const LessonRenderer = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
 
   // Use lesson prop first, fallback to component props
@@ -52,72 +64,6 @@ const LessonRenderer = ({
     () => lessonData.content || content,
     [lessonData.content, content]
   );
-
-  // 🔍 ENHANCED DEBUG LOGGING - This is where data gets lost
-  useEffect(() => {
-    console.group("🔴 LessonRenderer Debug Info");
-    console.log("========== FULL LESSON DATA ==========");
-    console.log("Lesson object:", lessonData);
-    console.log("Module:", module);
-    console.log("Course:", course);
-    
-    console.log("\n========== OBJECTIVES ==========");
-    console.log("Objectives count:", lessonObjectives?.length || 0);
-    console.log("Objectives:", lessonObjectives);
-    
-    console.log("\n========== CONTENT BLOCKS ==========");
-    console.log("Content array exists:", !!lessonContent);
-    console.log("Content is array:", Array.isArray(lessonContent));
-    console.log("Content length:", lessonContent?.length || 0);
-    console.log("Full content array:", lessonContent);
-    
-    // 🔍 Detailed block inspection
-    if (Array.isArray(lessonContent) && lessonContent.length > 0) {
-      console.log("\n========== BLOCK BREAKDOWN ==========");
-      lessonContent.forEach((block, idx) => {
-        console.group(`Block ${idx}: ${block.type}`);
-        
-        if (block.type === "mcq") {
-          console.log("Question:", block.question);
-          console.log("Question length:", block.question?.length || 0);
-          console.log("Question is empty:", !block.question || block.question.trim() === "");
-          console.log("Options:", block.options);
-          console.log("Options count:", block.options?.length || 0);
-          console.log("Answer:", block.answer);
-          console.log("Explanation:", block.explanation);
-        } else if (block.type === "code") {
-          console.log("Language:", block.language);
-          console.log("Code length:", block.code?.length || 0);
-          console.log("Code is empty:", !block.code || block.code.trim() === "");
-          console.log("Code preview:", block.code?.substring(0, 100) || "(empty)");
-        } else if (block.type === "paragraph") {
-          console.log("Text length:", block.text?.length || 0);
-          console.log("Text preview:", block.text?.substring(0, 100) || "(empty)");
-        } else if (block.type === "heading") {
-          console.log("Text:", block.text);
-          console.log("Level:", block.level);
-        } else if (block.type === "video") {
-          console.log("Query:", block.query);
-        }
-        
-        console.log("Full block object:", JSON.stringify(block, null, 2));
-        console.groupEnd();
-      });
-      
-      // 📊 Summary statistics
-      console.log("\n========== STATISTICS ==========");
-      console.log("Total blocks:", lessonContent.length);
-      console.log("MCQ blocks:", lessonContent.filter(b => b.type === "mcq").length);
-      console.log("Code blocks:", lessonContent.filter(b => b.type === "code").length);
-      console.log("Video blocks:", lessonContent.filter(b => b.type === "video").length);
-      console.log("Heading blocks:", lessonContent.filter(b => b.type === "heading").length);
-      console.log("Paragraph blocks:", lessonContent.filter(b => b.type === "paragraph").length);
-    } else {
-      console.warn("❌ CONTENT IS EMPTY OR NOT AN ARRAY!");
-    }
-    
-    console.groupEnd();
-  }, [lessonData, module, course, lessonObjectives, lessonContent]);
 
   // Detect scroll for scroll-to-top button
   useEffect(() => {
@@ -132,20 +78,10 @@ const LessonRenderer = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle save lesson
+  // 🔧 FIXED: Handle save lesson with correct endpoint
   const handleSaveLesson = async () => {
     if (!isAuthenticated) {
       alert("Please login to save lessons");
-      return;
-    }
-
-    if (!lessonData._id) {
-      alert("Lesson ID not found");
-      return;
-    }
-
-    if (!module?._id) {
-      alert("Module ID not found");
       return;
     }
 
@@ -155,20 +91,29 @@ const LessonRenderer = ({
     try {
       const token = await getAccessTokenSilently();
 
-      console.log("Saving lesson:", {
-        lessonId: lessonData._id,
-        lessonTitle: lessonData.title,
-        moduleId: module._id,
-        moduleName: module.title,
+      console.log("💾 Saving lesson:", {
+        title: lessonData.title,
+        course: course?.title,
+        module: module?.title,
       });
 
-      const result = await saveLesson(module._id, lessonData, token);
+      // Save lesson with course and module context
+      const result = await saveLessonWithContext(
+        lessonData,
+        course?.title || "Unknown Course",
+        module?.title || "Unknown Module",
+        token
+      );
 
-      console.log("Lesson saved successfully:", result);
+      console.log("✅ Lesson saved successfully:", result._id);
       setIsSaved(true);
 
+      // Try to mark as complete
       try {
-        await markLessonComplete(lessonData._id, token);
+        if (lessonData._id) {
+          await markLessonComplete(lessonData._id, token);
+          console.log("✅ Lesson marked as complete");
+        }
       } catch (progressErr) {
         console.warn("Could not mark lesson as complete:", progressErr);
       }
@@ -177,7 +122,7 @@ const LessonRenderer = ({
 
       setTimeout(() => setIsSaved(false), 2000);
     } catch (err) {
-      console.error("Error saving lesson:", err);
+      console.error("❌ Error saving lesson:", err);
       setSaveError(err.message || "Failed to save lesson");
       alert("Failed to save lesson: " + err.message);
     } finally {
@@ -185,10 +130,40 @@ const LessonRenderer = ({
     }
   };
 
-  // Handle share (placeholder)
+  // Handle share
   const handleShare = () => {
     alert("Share feature coming soon!");
   };
+
+  // 🔧 FIXED: Navigation handlers that properly call parent callbacks
+  const handlePreviousClick = () => {
+    console.log("⬅️ Previous button clicked");
+    console.log("Can go previous:", lessonIdx > 0);
+    if (onPrevious && typeof onPrevious === "function") {
+      onPrevious();
+    }
+  };
+
+  const handleNextClick = () => {
+    console.log("➡️ Next button clicked");
+    console.log("Can go next:", lessonIdx < totalLessons - 1);
+    if (onNext && typeof onNext === "function") {
+      onNext();
+    }
+  };
+
+  // Check if we can navigate
+  const canGoPrevious = lessonIdx > 0;
+  const canGoNext = lessonIdx < totalLessons - 1;
+
+  console.log("🔍 LessonRenderer state:", {
+    lessonIdx,
+    totalLessons,
+    canGoPrevious,
+    canGoNext,
+    hasOnPrevious: !!onPrevious,
+    hasOnNext: !!onNext,
+  });
 
   return (
     <div className="lesson-renderer-container">
@@ -208,7 +183,9 @@ const LessonRenderer = ({
                 <span className="breadcrumb-separator">/</span>
               </>
             )}
-            <span className="breadcrumb-current">{lessonData.title || "Lesson"}</span>
+            <span className="breadcrumb-current">
+              {lessonData.title || "Lesson"}
+            </span>
           </div>
 
           <h1 className="lesson-title">{lessonData.title}</h1>
@@ -218,8 +195,16 @@ const LessonRenderer = ({
             <button
               onClick={handleSaveLesson}
               disabled={isSaving || isSaved}
-              className={`action-btn ${isSaved ? "saved" : ""} ${isSaving ? "loading" : ""}`}
-              title={isSaving ? "Saving..." : isSaved ? "Saved!" : "Save lesson"}
+              className={`action-btn ${isSaved ? "saved" : ""} ${
+                isSaving ? "loading" : ""
+              }`}
+              title={
+                isSaving
+                  ? "Saving..."
+                  : isSaved
+                  ? "Saved!"
+                  : "Save this lesson"
+              }
             >
               {isSaved ? (
                 <>
@@ -254,9 +239,7 @@ const LessonRenderer = ({
           </div>
 
           {saveError && (
-            <div className="save-error-message">
-              Error: {saveError}
-            </div>
+            <div className="save-error-message">Error: {saveError}</div>
           )}
         </div>
       </header>
@@ -288,30 +271,18 @@ const LessonRenderer = ({
           {lessonContent && lessonContent.length > 0 ? (
             <div className="lesson-content">
               {lessonContent.map((block, idx) => {
-                // 🔍 Debug each block rendering
-                console.log(`Rendering block ${idx}:`, block.type);
-                
                 const BlockComponent = blockMap[block.type] || (() => (
                   <div className="invalid-block">
                     <p>Block Type: {block.type}</p>
-                    {process.env.NODE_ENV === "development" && (
-                      <pre>{JSON.stringify(block, null, 2)}</pre>
-                    )}
                   </div>
                 ));
-                
+
                 return <BlockComponent key={idx} {...block} />;
               })}
             </div>
           ) : (
             <div className="empty-content">
               <p>📝 No content available for this lesson yet.</p>
-              <p className="empty-hint">Check back soon as content is being generated.</p>
-              {process.env.NODE_ENV === "development" && (
-                <div style={{ marginTop: "20px", fontSize: "12px", color: "#999" }}>
-                  <p>Debug: lessonContent = {JSON.stringify(lessonContent)}</p>
-                </div>
-              )}
             </div>
           )}
         </section>
@@ -320,35 +291,36 @@ const LessonRenderer = ({
       {/* Navigation Footer */}
       <footer className="lesson-footer">
         <div className="lesson-navigation">
+          {/* Previous Button */}
           <button
-            onClick={onPrevious}
-            disabled={!onPrevious}
+            onClick={handlePreviousClick}
+            disabled={!canGoPrevious}
             className="nav-btn prev-btn"
-            title="Previous lesson"
+            title={canGoPrevious ? "Previous lesson" : "First lesson"}
           >
             <ChevronLeft size={20} />
             <span>Previous</span>
           </button>
 
+          {/* Progress Indicator */}
           <div className="lesson-progress">
             <span className="progress-text">
-              Lesson {(lessonIdx || 0) + 1}
+              Lesson {lessonIdx + 1} of {totalLessons}
             </span>
-            <div className="progress-dots">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`dot ${i === (lessonIdx || 0) ? "active" : ""}`}
-                />
-              ))}
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: `${((lessonIdx + 1) / totalLessons) * 100}%` }}
+              />
             </div>
           </div>
 
+          {/* Next Button */}
           <button
-            onClick={onNext}
-            disabled={!onNext}
+            onClick={handleNextClick}
+            disabled={!canGoNext}
             className="nav-btn next-btn"
-            title="Next lesson"
+            title={canGoNext ? "Next lesson" : "Last lesson"}
           >
             <span>Next</span>
             <ChevronRight size={20} />

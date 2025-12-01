@@ -155,17 +155,35 @@ export const getUserCourses = async (token) => {
   }
 };
 
+/**
+ * 🔧 FIXED: Save entire course to user's profile
+ * Sends course with all modules and lessons
+ */
 export const saveCourse = async (course, token) => {
   if (!token) throw new Error("Authentication required to save courses");
   if (!course) throw new Error("Course object is required");
+
   try {
-    console.log("Saving course:", course.title);
-    const result = await apiRequest("/courses", "POST", course, token);
-    console.log("Course saved successfully:", result);
+    console.log("💾 Saving full course:", course.title);
+
+    // Ensure course has required fields
+    const courseData = {
+      title: course.title || "Untitled Course",
+      description: course.description || "",
+      tags: course.tags || [],
+      modules: course.modules || [],
+      isGenerated: true,
+      createdAt: new Date(),
+    };
+
+    // POST to /courses to save entire course with all modules/lessons
+    const result = await apiRequest("/courses", "POST", courseData, token);
+
+    console.log("✅ Course saved successfully:", result._id);
     return result;
   } catch (err) {
     console.error("Error saving course:", err);
-    throw err;
+    throw new Error(err.message || "Failed to save course");
   }
 };
 
@@ -264,9 +282,83 @@ export const getLessonById = async (lessonId) => {
 };
 
 /**
- * Save/Create a lesson in a module
- * POST /api/lessons?moduleId={moduleId}
+ * 🔧 FIXED: Save a lesson to user's saved lessons
+ * This saves a lesson from a course to the user's collection
+ * Endpoint: POST /api/lessons/save
  */
+export const saveLessonWithContext = async (
+  lesson,
+  courseTitle,
+  moduleName,
+  token
+) => {
+  if (!token) throw new Error("Authentication required");
+  if (!lesson) throw new Error("Lesson object is required");
+
+  try {
+    console.log("💾 Saving lesson with context:", lesson.title);
+
+    const lessonData = {
+      title: lesson.title,
+      objectives: lesson.objectives || [],
+      content: lesson.content || [],
+      courseTitle: courseTitle,
+      moduleName: moduleName,
+    };
+
+    // Use /lessons/save endpoint specifically for saving lessons
+    const result = await apiRequest("/lessons/save", "POST", lessonData, token);
+
+    console.log("✅ Lesson saved successfully:", result._id);
+    return result;
+  } catch (err) {
+    console.error("Error saving lesson:", err);
+    throw new Error(err.message || "Failed to save lesson");
+  }
+};
+
+/**
+ * 🔧 FIXED: Get user's saved lessons
+ * GET /api/lessons/user/saved
+ */
+export const getUserSavedLessons = async (token) => {
+  if (!token) throw new Error("Authentication required");
+  try {
+    console.log("📚 Fetching saved lessons...");
+    const result = await apiRequest("/lessons/user/saved", "GET", null, token);
+    console.log(`✅ Fetched ${result.length} saved lessons`);
+    return result;
+  } catch (err) {
+    console.error("Error fetching saved lessons:", err);
+    // Return empty array on error to prevent breaking the page
+    return [];
+  }
+};
+
+/**
+ * 🔧 FIXED: Delete a saved lesson
+ * DELETE /api/lessons/saved/:id
+ */
+export const deleteSavedLesson = async (lessonId, token) => {
+  if (!token) throw new Error("Authentication required");
+  if (!lessonId) throw new Error("Lesson ID is required");
+
+  try {
+    console.log("🗑️  Deleting saved lesson:", lessonId);
+    const result = await apiRequest(
+      `/lessons/saved/${lessonId}`,
+      "DELETE",
+      null,
+      token
+    );
+    console.log("✅ Lesson deleted successfully");
+    return result;
+  } catch (err) {
+    console.error("Error deleting lesson:", err);
+    throw err;
+  }
+};
+
 export const saveLesson = async (moduleId, lesson, token) => {
   if (!token) throw new Error("Authentication required to save lessons");
   if (!moduleId) throw new Error("Module ID is required");
@@ -395,7 +487,6 @@ export const getUserProgress = async (courseId = null, token) => {
 
 // ==================== EXPORT FOR TESTING ====================
 
-// Fix ESLint warning by assigning to variable first
 const apiExports = {
   generateCourseAI,
   generateLessonAI,
@@ -412,6 +503,9 @@ const apiExports = {
   getLessonsByModule,
   getLessonById,
   saveLesson,
+  saveLessonWithContext,
+  getUserSavedLessons,
+  deleteSavedLesson,
   addLessonToModule,
   deleteLessonById,
   updateLesson,

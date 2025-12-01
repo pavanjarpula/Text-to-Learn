@@ -5,6 +5,7 @@ import {
   getUserCourses,
   deleteCourseById,
   getUserProfile,
+  getUserSavedLessons,
 } from "../utils/api";
 import {
   Trash2,
@@ -16,6 +17,7 @@ import {
   Clock,
   Zap,
   AlertCircle,
+  BookmarkCheck,
 } from "lucide-react";
 import "./Profile.css";
 
@@ -24,11 +26,13 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
+  const [savedLessons, setSavedLessons] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showSavedLessons, setShowSavedLessons] = useState(false);
 
   // Fetch user courses and profile
   useEffect(() => {
@@ -45,13 +49,16 @@ const ProfilePage = () => {
         const coursesData = await getUserCourses(token);
         setCourses(coursesData || []);
 
+        // Fetch saved lessons
+        const savedLessonsData = await getUserSavedLessons(token);
+        setSavedLessons(savedLessonsData || []);
+
         // Fetch user profile
         try {
           const profileData = await getUserProfile(token);
           setUserProfile(profileData);
         } catch (profileErr) {
           console.warn("Could not fetch profile data:", profileErr);
-          // Continue without profile data - use Auth0 user info
         }
       } catch (err) {
         console.error("Failed to load user data:", err);
@@ -81,6 +88,19 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout({ returnTo: window.location.origin });
+  };
+
+  // Handle viewing saved lesson
+  const handleViewSavedLesson = (lesson) => {
+    console.log("Viewing saved lesson:", lesson.title);
+    // Navigate to lesson page with the saved lesson data
+    navigate("/lesson", {
+      state: {
+        lesson: lesson,
+        courseTitle: lesson.courseTitle,
+        moduleName: lesson.moduleName,
+      },
+    });
   };
 
   if (!isAuthenticated) {
@@ -152,6 +172,21 @@ const ProfilePage = () => {
               <Plus size={18} />
               <span>New Course</span>
             </button>
+
+            {/* 🔧 SAVED LESSONS BUTTON */}
+            <button
+              onClick={() => setShowSavedLessons(!showSavedLessons)}
+              className={`action-btn saved-lessons-btn ${
+                showSavedLessons ? "active" : ""
+              }`}
+              title="View saved lessons"
+            >
+              <BookmarkCheck size={18} />
+              <span>
+                Saved Lessons ({savedLessons.length})
+              </span>
+            </button>
+
             <button
               onClick={() => {}}
               className="action-btn settings-btn"
@@ -190,8 +225,8 @@ const ProfilePage = () => {
           <div className="stat-card">
             <Zap size={20} />
             <div>
-              <p className="stat-label">Status</p>
-              <p className="stat-value">Active</p>
+              <p className="stat-label">Saved</p>
+              <p className="stat-value">{savedLessons.length}</p>
             </div>
           </div>
         </div>
@@ -199,6 +234,42 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <main className="profile-main">
+        {/* 🔧 SAVED LESSONS SECTION */}
+        {showSavedLessons && (
+          <section className="profile-saved-lessons-section">
+            <div className="section-header">
+              <h2>
+                <BookmarkCheck size={20} />
+                Your Saved Lessons
+              </h2>
+              <span className="lesson-count">{savedLessons.length} saved</span>
+            </div>
+
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Loading saved lessons...</p>
+              </div>
+            ) : savedLessons.length === 0 ? (
+              <div className="empty-state">
+                <BookmarkCheck size={48} />
+                <h3>No Saved Lessons Yet</h3>
+                <p>Save lessons from courses to access them here</p>
+              </div>
+            ) : (
+              <div className="saved-lessons-grid">
+                {savedLessons.map((lesson) => (
+                  <SavedLessonCard
+                    key={lesson._id}
+                    lesson={lesson}
+                    onView={() => handleViewSavedLesson(lesson)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* My Courses Section */}
         <section className="profile-courses-section">
           <div className="section-header">
@@ -247,9 +318,8 @@ const ProfilePage = () => {
             <h3>Delete Course?</h3>
             <p>
               Are you sure you want to delete "
-              {
-                courses.find((c) => c._id === deleteConfirm)?.title
-              }"? This action cannot be undone.
+              {courses.find((c) => c._id === deleteConfirm)?.title}"? This action
+              cannot be undone.
             </p>
             <div className="modal-actions">
               <button
@@ -326,6 +396,48 @@ const CourseCard = ({ course, onView, onDelete, isDeleting }) => {
       <button onClick={onView} className="course-card-btn">
         <Eye size={16} />
         <span>View Course</span>
+      </button>
+    </div>
+  );
+};
+
+/**
+ * 🔧 NEW: Saved Lesson Card Component
+ */
+const SavedLessonCard = ({ lesson, onView }) => {
+  return (
+    <div className="saved-lesson-card">
+      <div className="saved-lesson-header">
+        <div>
+          <h3 className="saved-lesson-title">{lesson.title}</h3>
+          <p className="saved-lesson-course">{lesson.courseTitle}</p>
+          {lesson.moduleName && (
+            <p className="saved-lesson-module">📖 {lesson.moduleName}</p>
+          )}
+        </div>
+      </div>
+
+      {lesson.objectives && lesson.objectives.length > 0 && (
+        <div className="saved-lesson-objectives">
+          <strong>Learning Goals:</strong>
+          <ul>
+            {lesson.objectives.slice(0, 2).map((obj, idx) => (
+              <li key={idx}>{obj}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="saved-lesson-stats">
+        <span className="stat">📝 {lesson.content?.length || 0} blocks</span>
+        <span className="stat">
+          ⏰ {new Date(lesson.createdAt).toLocaleDateString()}
+        </span>
+      </div>
+
+      <button onClick={onView} className="saved-lesson-btn">
+        <Eye size={16} />
+        <span>View Lesson</span>
       </button>
     </div>
   );

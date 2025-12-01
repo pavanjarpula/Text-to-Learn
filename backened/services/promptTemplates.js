@@ -1,4 +1,35 @@
-// backend/services/promptTemplates.js - FIXED VERSION (Working)
+// backend/services/promptTemplates.js - CONCRETE CONTENT GENERATION
+
+/**
+ * Determine lesson importance and depth level
+ */
+function getLessonContext(
+  courseTitle,
+  moduleTitle,
+  lessonTitle,
+  moduleIndex,
+  lessonIndex,
+  totalModules,
+  totalLessons
+) {
+  const isFoundational = moduleIndex === 0 && lessonIndex === 0;
+  const isAdvanced = moduleIndex >= totalModules - 2;
+  const isIntroductory = moduleIndex === 0;
+  const isCulminating = lessonIndex === totalLessons - 1;
+
+  return {
+    isFoundational,
+    isAdvanced,
+    isIntroductory,
+    isCulminating,
+    depth: isFoundational
+      ? "foundational"
+      : isAdvanced
+      ? "advanced"
+      : "intermediate",
+    position: `lesson ${lessonIndex + 1} of ${totalLessons}`,
+  };
+}
 
 /**
  * Generate a comprehensive prompt for course creation
@@ -31,124 +62,205 @@ STRICT REQUIREMENTS:
 OUTPUT ONLY THE JSON OBJECT. START WITH { END WITH }`;
 
 /**
- * FIXED: Lesson prompt - proper JSON generation without template escaping issues
+ * FIXED: Generate CONCRETE, SPECIFIC lesson content
+ * NO template variables in paragraphs - all actual content
  */
-exports.generateLessonPrompt = (courseTitle, moduleTitle, lessonTitle) => {
-  const prompt = `CRITICAL: Generate comprehensive lesson for: "${lessonTitle}"
-In module: "${moduleTitle}"
-For course: "${courseTitle}"
+exports.generateLessonPrompt = (
+  courseTitle,
+  moduleTitle,
+  lessonTitle,
+  moduleIndex = 0,
+  lessonIndex = 0,
+  totalModules = 4,
+  totalLessons = 16
+) => {
+  const context = getLessonContext(
+    courseTitle,
+    moduleTitle,
+    lessonTitle,
+    moduleIndex,
+    lessonIndex,
+    totalModules,
+    totalLessons
+  );
 
-You MUST respond with ONLY valid JSON. NO MARKDOWN, NO CODE FENCES, NO EXPLANATIONS.
+  let depthGuidance = "";
+  if (context.isFoundational) {
+    depthGuidance = `This is a FOUNDATIONAL lesson (first in the course). 
+    - Use beginner-friendly language
+    - Explain basic definitions clearly
+    - Provide simple, relatable examples
+    - Don't assume prior knowledge
+    - Build confidence in learners`;
+  } else if (context.isAdvanced) {
+    depthGuidance = `This is an ADVANCED lesson (in final modules).
+    - Assume learners have foundation knowledge
+    - Focus on complex scenarios and edge cases
+    - Discuss optimization and performance
+    - Cover professional best practices
+    - Reference earlier concepts as foundation`;
+  } else {
+    depthGuidance = `This is an INTERMEDIATE lesson.
+    - Build on foundational concepts
+    - Include practical, real-world scenarios
+    - Show common implementation patterns
+    - Discuss trade-offs and considerations
+    - Connect to broader concepts in ${courseTitle}`;
+  }
+
+  const prompt = `You are an expert educator creating a lesson about: "${lessonTitle}"
+
+LESSON METADATA:
+- Course: ${courseTitle}
+- Module: ${moduleTitle}
+- Lesson Title: ${lessonTitle}
+- Depth Level: ${context.depth}
+- Position: ${context.position}
+
+DEPTH GUIDELINES:
+${depthGuidance}
+
+CRITICAL: Create REAL, SPECIFIC content - NOT templates or placeholders.
+Each paragraph must contain ACTUAL educational content about ${lessonTitle}.
+
+RESPOND WITH ONLY VALID JSON. NO MARKDOWN, NO CODE FENCES, NO EXPLANATIONS.
 
 {
   "title": "${lessonTitle}",
+  "depth": "${context.depth}",
   "objectives": [
-    "Understand the fundamentals of ${lessonTitle}",
-    "Apply ${lessonTitle} in practical scenarios",
-    "Evaluate different approaches to ${lessonTitle}"
+    "Students will be able to understand key concepts of ${lessonTitle}",
+    "Students will be able to apply ${lessonTitle} in practical contexts",
+    "Students will be able to evaluate when and how to use ${lessonTitle}"
   ],
   "content": [
     {
       "type": "heading",
-      "text": "Introduction to ${lessonTitle}",
+      "text": "Understanding ${lessonTitle}",
       "level": 1
     },
     {
       "type": "paragraph",
-      "text": "Comprehensive explanation of ${lessonTitle}. This is detailed educational content explaining the core concepts of ${lessonTitle}, why it's important, and how it's used in practice. ${lessonTitle} forms a foundational concept in modern development and understanding it will significantly enhance your skills. Provide at least 200 words of substantive educational material that thoroughly explains what ${lessonTitle} is, why developers and organizations use it, and what problems it solves."
+      "text": "Write a comprehensive introduction (200+ words) explaining what ${lessonTitle} is in concrete, specific terms. Define the concept clearly with actual details about ${lessonTitle}. Explain why ${lessonTitle} exists and what problem it addresses. This should be detailed and informative, NOT generic or a placeholder. Use specific terminology and concepts relevant to ${lessonTitle}. Make it clear and educational for someone learning ${lessonTitle} for the first time in the context of ${moduleTitle}."
     },
     {
       "type": "heading",
-      "text": "Key Concepts and Principles",
+      "text": "Key Components and How ${lessonTitle} Works",
       "level": 2
     },
     {
       "type": "paragraph",
-      "text": "Detailed discussion of the key concepts in ${lessonTitle}. Explain the important principles, methodologies, and best practices related to ${lessonTitle}. This section should cover: (1) The fundamental theory behind ${lessonTitle}, (2) Core principles and rules, (3) Different methodologies and approaches, (4) Best practices used by professionals. Provide at least 200 words covering the main ideas and theories related to ${lessonTitle}."
+      "text": "Write a detailed technical explanation (200+ words) of how ${lessonTitle} actually works. Break down the mechanisms, components, or principles that make ${lessonTitle} function. This should be completely different from the introduction - focus on the 'how' rather than the 'what'. Explain the internal processes, key steps, important elements, and technical details that someone needs to understand to work with ${lessonTitle}. Be specific and substantive."
     },
     {
       "type": "heading",
-      "text": "Practical Application",
+      "text": "Real-World Applications and Practical Use Cases",
       "level": 2
     },
     {
       "type": "paragraph",
-      "text": "Real-world applications and examples of ${lessonTitle}. Show how these concepts are used in practice with concrete examples. Discuss specific use cases and scenarios where ${lessonTitle} is applied. Include information about: (1) Industry examples, (2) Common use cases, (3) Real-world scenarios, (4) How companies use ${lessonTitle}. Provide at least 200 words with practical examples and detailed use cases."
+      "text": "Write a practical, concrete explanation (200+ words) of how ${lessonTitle} is used in real situations. Provide specific, actual examples of where ${lessonTitle} is applied in industry, business, or technology. Discuss specific scenarios, use cases, or situations where someone would use ${lessonTitle}. Include real-world problems that ${lessonTitle} solves. Make this practical and grounded in reality, not theoretical or hypothetical."
+    },
+    {
+      "type": "heading",
+      "text": "Best Practices, Pitfalls, and Professional Considerations",
+      "level": 2
+    },
+    {
+      "type": "paragraph",
+      "text": "Write a comprehensive guide (200+ words) covering best practices when working with ${lessonTitle}. Include common mistakes people make, what professionals do to use ${lessonTitle} effectively, important considerations, and potential pitfalls to avoid. Discuss quality factors, performance considerations, and professional standards related to ${lessonTitle}. This section should provide actionable wisdom that makes learners better at using ${lessonTitle} in professional settings."
     },
     {
       "type": "code",
       "language": "python",
-      "code": "# Working example of ${lessonTitle}\\ndef example_function():\\n    \\\"\\\"\\\"Demonstrates ${lessonTitle} in action\\\"\\\"\\\"\\n    print('Understanding ${lessonTitle}')\\n    result = True\\n    return result\\n\\n# Execute the example\\nif __name__ == '__main__':\\n    output = example_function()\\n    print(f'Result: {output}')"
+      "code": "# Practical Example of ${lessonTitle}\\n# This shows a real, working implementation\\n\\nclass ${lessonTitle.replace(
+    /\\s+/g,
+    ""
+  )}Example:\\n    def __init__(self):\\n        self.data = []\\n        self.status = 'initialized'\\n    \\n    def process(self, input_value):\\n        \\\"\\\"\\\"Process input using ${lessonTitle} principles\\\"\\\"\\\"\\n        result = self.transform(input_value)\\n        self.data.append(result)\\n        return result\\n    \\n    def transform(self, value):\\n        # Actual transformation logic for ${lessonTitle}\\n        return value\\n    \\n    def get_results(self):\\n        return self.data\\n\\n# Usage example\\nexample = ${lessonTitle.replace(
+    /\\s+/g,
+    ""
+  )}Example()\\nresult = example.process('test_input')\\nprint(f'Processed: {result}')"
+    },
+    {
+      "type": "code",
+      "language": "python",
+      "code": "# Advanced Pattern: Production-Ready ${lessonTitle} Implementation\\n# Shows a different approach with more sophisticated techniques\\n\\nimport logging\\nfrom typing import Any, Dict\\n\\nlogger = logging.getLogger(__name__)\\n\\nclass Production${lessonTitle.replace(
+    /\\s+/g,
+    ""
+  )}Handler:\\n    def __init__(self, config: Dict[str, Any]):\\n        self.config = config\\n        self.cache = {}\\n        logger.info(f'Initialized ${lessonTitle} handler with config: {config}')\\n    \\n    def execute(self, task: Any) -> Any:\\n        \\\"\\\"\\\"Execute ${lessonTitle} with error handling and caching\\\"\\\"\\\"\\n        task_id = id(task)\\n        if task_id in self.cache:\\n            logger.debug(f'Returning cached result for task {task_id}')\\n            return self.cache[task_id]\\n        \\n        try:\\n            result = self.process_with_error_handling(task)\\n            self.cache[task_id] = result\\n            return result\\n        except Exception as e:\\n            logger.error(f'Error processing task: {str(e)}')\\n            raise\\n    \\n    def process_with_error_handling(self, task: Any) -> Any:\\n        # Complex processing logic\\n        return task"
     },
     {
       "type": "video",
-      "query": "Tutorial on ${lessonTitle} for beginners complete guide"
+      "query": "${lessonTitle} complete tutorial with examples and practical applications"
+    },
+    {
+      "type": "heading",
+      "text": "Check Your Understanding",
+      "level": 2
     },
     {
       "type": "mcq",
-      "question": "What is the primary purpose of ${lessonTitle}?",
+      "question": "What is the primary definition or core concept of ${lessonTitle}?",
       "options": [
-        "To determine the format of data in a program",
-        "To enable efficient data storage and manipulation",
-        "To create user interfaces",
-        "To handle network communications"
+        "An incorrect or oversimplified definition",
+        "The correct, specific definition of ${lessonTitle} based on what was taught",
+        "A common misconception about what ${lessonTitle} is",
+        "A definition of a related but different concept"
       ],
       "answer": 1,
-      "explanation": "This is correct because ${lessonTitle} is fundamentally designed to enable efficient data storage and manipulation, which is its primary purpose and benefit."
+      "explanation": "This correctly identifies the specific definition and core concept of ${lessonTitle} as explained in the lesson."
     },
     {
       "type": "mcq",
-      "question": "Which of the following is a key concept in ${lessonTitle}?",
+      "question": "How does ${lessonTitle} actually function or work internally?",
       "options": [
-        "Data persistence",
-        "Proper structure and organization",
-        "Data encapsulation",
-        "Data aggregation"
+        "An incorrect description of how ${lessonTitle} works",
+        "A correct explanation of the mechanisms and processes of ${lessonTitle}",
+        "A misconception about internal workings",
+        "An explanation of a similar but different concept"
       ],
       "answer": 1,
-      "explanation": "Understanding proper structure and organization is a fundamental principle of ${lessonTitle} that demonstrates core understanding of the concept."
+      "explanation": "This correctly describes the actual mechanisms, processes, or internal workings of ${lessonTitle}."
     },
     {
       "type": "mcq",
-      "question": "How would you practically apply ${lessonTitle} in a real-world scenario?",
+      "question": "In which real-world scenario would you apply ${lessonTitle}?",
       "options": [
-        "Using strings for numerical calculations",
-        "Organizing user data in a structured format for quick access",
-        "Storing all data in a single variable",
-        "Using random data organization methods"
+        "A scenario where ${lessonTitle} would not be appropriate",
+        "A real, practical scenario where ${lessonTitle} solves an actual problem",
+        "A scenario requiring a different approach or tool",
+        "A hypothetical scenario that doesn't reflect real usage"
       ],
       "answer": 1,
-      "explanation": "This demonstrates the correct practical application of ${lessonTitle} by organizing data in a structured and efficient manner in real-world situations."
+      "explanation": "This identifies a genuine, real-world application where ${lessonTitle} would be the appropriate solution."
+    },
+    {
+      "type": "mcq",
+      "question": "What is a best practice or important consideration when using ${lessonTitle}?",
+      "options": [
+        "A common mistake to avoid",
+        "A professional best practice for working with ${lessonTitle}",
+        "An approach that works but is not optimal",
+        "An outdated method no longer used"
+      ],
+      "answer": 1,
+      "explanation": "This represents professional best practices and important considerations for effectively using ${lessonTitle}."
     }
   ]
 }
 
-CRITICAL VALIDATION RULES - CHECK EVERY FIELD BEFORE RESPONDING:
+VALIDATION CHECKLIST - Do NOT respond unless:
+✓ All 4 paragraphs contain REAL, SPECIFIC content about ${lessonTitle}
+✓ NO paragraph contains template variables or placeholders
+✓ Each paragraph is 200+ words of actual educational content
+✓ Paragraphs cover different aspects: definition → mechanics → applications → best practices
+✓ Code examples are real Python code that would actually run
+✓ All 4 MCQ questions are specific to ${lessonTitle}, not generic
+✓ MCQ options are realistic and plausible
+✓ Explanations reference specific lesson content
+✓ Video query is specific to ${lessonTitle}
 
-1. CODE BLOCK - MUST HAVE ACTUAL CODE:
-   ✓ "code" field must have real Python code with newlines as \\n
-   ✓ Example: "code": "def test():\\n    pass"
-   ✓ NEVER: "code": "" or "code": "..." or "code": "TODO"
-
-2. MCQ BLOCKS - EACH MUST HAVE:
-   ✓ "question" field - NEVER EMPTY, NEVER WHITESPACE ONLY
-   ✓ "options" field - EXACTLY 4 string options
-   ✓ "answer" field - Must be 0, 1, 2, or 3
-   ✓ "explanation" field - NEVER EMPTY
-   
-3. BEFORE RESPONDING:
-   □ Count blocks: should have 11 total (3 headings, 3 paragraphs, 1 code, 1 video, 3 mcq)
-   □ Scan all "question" fields - verify NONE are empty strings
-   □ Scan all "code" fields - verify NOT empty
-   □ Scan all "explanation" fields - verify NOT empty
-   □ Check all "answer" values are 0-3
-   □ Check all "options" arrays have exactly 4 items
-
-IF ANY VALIDATION FAILS, RESPOND WITH ERROR:
-{"error": "validation failed"}
-
-OUTPUT ONLY THE RAW JSON OBJECT. NO MARKDOWN. NO EXPLANATIONS.
-START IMMEDIATELY WITH { AND END WITH }`;
+OUTPUT ONLY RAW JSON. START WITH { END WITH }`;
 
   return prompt;
 };
@@ -166,6 +278,7 @@ exports.getLessonStats = (lesson) => {
     paragraphCount: lesson.content.filter((b) => b.type === "paragraph").length,
     codeCount: lesson.content.filter((b) => b.type === "code").length,
     videoCount: lesson.content.filter((b) => b.type === "video").length,
+    depth: lesson.depth || "unknown",
     codeWithContent: lesson.content.filter(
       (b) => b.type === "code" && b.code && b.code.trim().length > 0
     ).length,
@@ -174,3 +287,5 @@ exports.getLessonStats = (lesson) => {
     ).length,
   };
 };
+
+module.exports.getLessonContext = getLessonContext;

@@ -1,3 +1,5 @@
+/* src/components/LessonRenderer.css */
+
 :root {
   --primary: #06b6d4;
   --primary-dark: #0891b2;
@@ -22,6 +24,7 @@
   animation: fadeIn 0.4s ease-out;
   background: var(--bg-dark);
   min-height: 100vh;
+  padding: 1.5rem 1rem;
 }
 
 @keyframes fadeIn {
@@ -33,20 +36,27 @@
   }
 }
 
+/* ========== LESSON CARD WRAPPER ========== */
+.lesson-card-wrapper {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
 /* ========== LESSON HEADER ========== */
 .lesson-header {
-  padding: 0.9rem 1.5rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  animation: slideIn 0.4s ease-out;
   backdrop-filter: blur(8px);
 }
 
 .lesson-header-content {
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -54,7 +64,7 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -83,79 +93,73 @@
 }
 
 .lesson-title {
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  font-weight: 800;
-  margin: 0.3rem 0 0.5rem 0;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.5rem 0 1rem 0;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .lesson-header-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.45rem 0.8rem;
-  background: rgba(255, 255, 255, 0.05);
+  gap: 0.35rem;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(6, 182, 212, 0.3);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
 }
 
-.action-btn:hover {
-  background: rgba(6, 182, 212, 0.1);
+.action-btn:hover:not(:disabled) {
+  background: rgba(6, 182, 212, 0.15);
   color: var(--primary);
   border-color: var(--primary);
+  transform: translateY(-2px);
 }
 
 .action-btn.saved {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.15);
   color: var(--success);
   border-color: var(--success);
 }
 
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .action-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
-.action-btn span {
-  display: none;
-}
-
-/* ========== MAIN CONTENT ========== */
-.lesson-main-content {
-  flex: 1;
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 1.5rem 1.5rem 2.5rem 1.5rem;
-  overflow-y: auto;
-}
-
-/* ========== OBJECTIVES SECTION ========== */
-.objectives-section {
-  margin-bottom: 2.5rem;
-  animation: slideIn 0.4s ease-out 0.1s both;
+.save-error-message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -163,26 +167,54 @@
   }
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== MAIN CONTENT CARD ========== */
+.lesson-main-content {
+  flex: 1;
+  padding: 2.5rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  animation: slideIn 0.4s ease-out 0.1s both;
+}
+
+/* ========== OBJECTIVES SECTION ========== */
+.objectives-section {
+  margin-bottom: 2.5rem;
+  animation: slideIn 0.4s ease-out 0.15s both;
+}
+
 .section-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
   color: var(--text-primary);
 }
 
 .objectives-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .objective-card {
   display: flex;
-  gap: 0.7rem;
-  padding: 0.9rem;
-  background: rgba(16, 185, 129, 0.1);
+  gap: 0.8rem;
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 9px;
+  border-radius: 8px;
   transition: all 0.3s ease;
 }
 
@@ -196,8 +228,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   background: var(--success);
   color: white;
   border-radius: 50%;
@@ -209,14 +241,20 @@
 .objective-card p {
   margin: 0;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.5;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+}
+
+/* ========== HINGLISH SECTION ========== */
+.hinglish-section {
+  margin-bottom: 2.5rem;
+  animation: slideIn 0.4s ease-out 0.2s both;
 }
 
 /* ========== CONTENT SECTION ========== */
 .content-section {
-  margin-bottom: 2.5rem;
+  margin-bottom: 0;
 }
 
 .lesson-content {
@@ -229,41 +267,51 @@
   animation: slideIn 0.4s ease-out both;
 }
 
+.lesson-content > div:nth-child(1) {
+  animation-delay: 0.25s;
+}
+
 .lesson-content > div:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.lesson-content > div:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-.lesson-content > div:nth-child(4) {
   animation-delay: 0.3s;
 }
 
-.lesson-content > div:nth-child(5) {
+.lesson-content > div:nth-child(3) {
+  animation-delay: 0.35s;
+}
+
+.lesson-content > div:nth-child(4) {
   animation-delay: 0.4s;
+}
+
+.lesson-content > div:nth-child(5) {
+  animation-delay: 0.45s;
 }
 
 .empty-content {
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 3rem 2rem;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
 }
 
 .empty-content p {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
+}
+
+.empty-hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
 }
 
 .invalid-block {
   padding: 1.2rem;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 9px;
+  border-radius: 8px;
   color: #fca5a5;
 }
 
@@ -275,40 +323,39 @@
 
 /* ========== LESSON FOOTER ========== */
 .lesson-footer {
-  padding: 0.8rem 1.5rem;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
-  position: sticky;
-  bottom: 0;
-  z-index: 30;
+  padding: 1.5rem 2rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: 12px;
+  animation: slideIn 0.4s ease-out 0.2s both;
 }
 
 .lesson-navigation {
-  max-width: 1000px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.2rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.95rem;
-  background: rgba(6, 182, 212, 0.1);
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  background: rgba(6, 182, 212, 0.15);
   border: 1px solid rgba(6, 182, 212, 0.3);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--primary);
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   transition: all 0.2s ease;
+  flex: 1;
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: rgba(6, 182, 212, 0.2);
+  background: rgba(6, 182, 212, 0.25);
   border-color: var(--primary);
   transform: translateY(-2px);
 }
@@ -331,23 +378,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  flex: 0 0 auto;
 }
 
 .progress-text {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
 .progress-dots {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background: rgba(6, 182, 212, 0.3);
   border-radius: 50%;
   transition: all 0.3s ease;
@@ -355,7 +403,7 @@
 
 .dot.active {
   background: var(--primary);
-  width: 18px;
+  width: 20px;
   border-radius: 3px;
 }
 
@@ -364,8 +412,8 @@
   position: fixed;
   bottom: 90px;
   right: 2rem;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   border: none;
   border-radius: 50%;
@@ -396,95 +444,190 @@
   }
 }
 
+/* ========== BLOCK COMPONENTS - FIX FOR HEADING SIZES ========== */
+/* Heading block styles - ensure consistency with sidebar */
+.heading-block {
+  margin: 1.5rem 0 0.8rem 0;
+  color: var(--text-primary);
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.heading-block.level-1 {
+  font-size: 1rem;
+}
+
+.heading-block.level-2 {
+  font-size: 0.95rem;
+}
+
+.heading-block.level-3 {
+  font-size: 0.9rem;
+}
+
+.heading-block.level-4 {
+  font-size: 0.85rem;
+}
+
+/* Paragraph block styles */
+.paragraph-block {
+  margin: 0.8rem 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
 /* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .lesson-renderer-container {
+    padding: 1.5rem 0.75rem;
+  }
+
   .lesson-header {
-    padding: 0.75rem 1rem;
-  }
-
-  .lesson-title {
-    font-size: 1.1rem;
-    margin: 0.3rem 0 0.4rem 0;
-  }
-
-  .lesson-header-actions {
-    gap: 0.4rem;
-    margin-top: 0.4rem;
+    padding: 1.75rem;
   }
 
   .lesson-main-content {
-    padding: 1.2rem 1rem 2rem 1rem;
+    padding: 2rem;
+  }
+
+  .lesson-footer {
+    padding: 1.25rem;
   }
 
   .objectives-grid {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
   }
 
-  .objective-card {
-    padding: 0.8rem;
-  }
-
-  .section-title {
+  .lesson-title {
     font-size: 1rem;
-    margin-bottom: 0.7rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .lesson-renderer-container {
+    padding: 1rem 0.5rem;
   }
 
-  .lesson-content {
-    gap: 1.8rem;
+  .lesson-header {
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .lesson-title {
+    font-size: 1.1rem;
+    margin: 0.4rem 0 1rem 0;
+  }
+
+  .lesson-header-actions {
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .lesson-main-content {
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .lesson-footer {
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
   }
 
   .lesson-navigation {
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 1rem;
   }
 
   .nav-btn {
     width: 100%;
     justify-content: center;
-    padding: 0.5rem 0.9rem;
   }
 
-  .lesson-footer {
-    padding: 0.75rem 1rem;
+  .lesson-content {
+    gap: 1.5rem;
+  }
+
+  .objectives-grid {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .objective-card {
+    padding: 0.85rem;
+  }
+
+  .section-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .heading-block.level-1 {
+    font-size: 0.95rem;
+  }
+
+  .heading-block.level-2 {
+    font-size: 0.9rem;
+  }
+
+  .paragraph-block {
+    font-size: 0.9rem;
   }
 
   .scroll-to-top-btn {
     bottom: 80px;
     right: 1rem;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
   }
 }
 
 @media (max-width: 480px) {
+  .lesson-renderer-container {
+    padding: 0.75rem 0.5rem;
+  }
+
   .lesson-header {
-    padding: 0.65rem 0.75rem;
+    padding: 1.25rem;
+    border-radius: 8px;
   }
 
   .lesson-breadcrumb {
-    font-size: 0.7rem;
-    gap: 0.2rem;
-    margin-bottom: 0.3rem;
+    font-size: 0.65rem;
+    gap: 0.15rem;
+    margin-bottom: 0.75rem;
   }
 
   .lesson-title {
-    font-size: 1rem;
-    margin: 0.25rem 0 0.3rem 0;
+    font-size: 0.85rem;
+    margin: 0.3rem 0 0.7rem 0;
   }
 
   .lesson-header-actions {
-    gap: 0.35rem;
-    margin-top: 0.3rem;
+    gap: 0.4rem;
+  }
+
+  .action-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
   }
 
   .lesson-main-content {
-    padding: 1rem 0.75rem 1.5rem 0.75rem;
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+
+  .lesson-content {
+    gap: 1.2rem;
   }
 
   .section-title {
-    font-size: 0.95rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.7rem;
   }
 
   .objectives-grid {
@@ -492,7 +635,7 @@
   }
 
   .objective-card {
-    padding: 0.7rem;
+    padding: 0.75rem;
     gap: 0.6rem;
   }
 
@@ -500,28 +643,64 @@
     font-size: 0.8rem;
   }
 
-  .lesson-content {
-    gap: 1.6rem;
+  .objective-checkmark {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
   }
 
   .lesson-footer {
-    padding: 0.65rem 0.75rem;
+    padding: 1rem;
+    border-radius: 8px;
   }
 
   .nav-btn {
-    padding: 0.45rem 0.8rem;
+    padding: 0.55rem 0.9rem;
     font-size: 0.75rem;
+  }
+
+  .lesson-navigation {
+    gap: 0.75rem;
   }
 
   .progress-text {
     font-size: 0.7rem;
   }
 
+  .progress-dots {
+    gap: 0.3rem;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .dot.active {
+    width: 16px;
+  }
+
   .scroll-to-top-btn {
     bottom: 75px;
     right: 0.75rem;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .empty-content {
+    padding: 2rem 1rem;
+  }
+
+  .heading-block.level-1 {
+    font-size: 0.9rem;
+  }
+
+  .heading-block.level-2 {
+    font-size: 0.85rem;
+  }
+
+  .paragraph-block {
+    font-size: 0.85rem;
   }
 }
 
@@ -542,7 +721,8 @@
 
   .lesson-main-content {
     padding: 0;
-    max-width: 100%;
+    background: transparent;
+    border: none;
   }
 
   .lesson-content {
@@ -550,7 +730,7 @@
   }
 }
 
-/* ========== DARK MODE OVERRIDES ========== */
+/* ========== DARK MODE ========== */
 @media (prefers-color-scheme: dark) {
   .lesson-renderer-container {
     background: var(--bg-dark);
@@ -560,8 +740,12 @@
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
   }
 
+  .lesson-main-content {
+    background: rgba(30, 41, 59, 0.5);
+  }
+
   .lesson-footer {
-    background: var(--bg-card);
+    background: rgba(30, 41, 59, 0.5);
   }
 }
 
@@ -571,43 +755,5 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-.action-btn.saved {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
-  border-color: var(--success);
-}
-
-.action-btn.loading {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.save-error-message {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 6px;
-  color: #fca5a5;
-  font-size: 0.85rem;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

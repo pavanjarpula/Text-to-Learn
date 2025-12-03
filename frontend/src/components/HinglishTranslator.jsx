@@ -1,5 +1,13 @@
-import React, { useState } from "react";
-import { Volume2, Loader, AlertCircle, ChevronDown, Download } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Volume2,
+  Loader,
+  AlertCircle,
+  ChevronDown,
+  Download,
+  Pause,
+  Play,
+} from "lucide-react";
 import "./HinglishTranslator.css";
 
 const HinglishTranslator = ({ lesson = {} }) => {
@@ -8,19 +16,47 @@ const HinglishTranslator = ({ lesson = {} }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [audioLoading, setAudioLoading] = useState(false);
-  const [audioAvailable, setAudioAvailable] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audioElement, setAudioElement] = useState(null);
+  const audioRef = useRef(null);
+  const [audioAvailable, setAudioAvailable] = useState(false);
 
-  // Extract text from lesson content
+  // 🔧 FIX: Reset translator state when lesson changes
+  useEffect(() => {
+    console.log("📝 Lesson changed, resetting Hinglish translator");
+    setExpanded(false);
+    setHinglishText(null);
+    setError(null);
+    setAudioAvailable(false);
+    setAudioPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+  }, [lesson?._id]); // Reset whenever lesson ID changes
+
+  // Extract text from lesson content - 🔧 FIX: Include ALL paragraphs and headings
   const extractLessonText = () => {
-    if (!lesson || !Array.isArray(lesson.content)) return "";
+    if (!lesson || !Array.isArray(lesson.content)) {
+      console.warn("No lesson content available");
+      return "";
+    }
 
-    return lesson.content
+    // Extract ALL paragraph and heading blocks (not just first 2)
+    const textContent = lesson.content
       .filter((block) => ["paragraph", "heading"].includes(block.type))
       .map((block) => block.text || block.title || "")
-      .join("\n\n")
-      .substring(0, 2000);
+      .filter((text) => text.trim().length > 0); // Remove empty strings
+
+    console.log(`📚 Extracted ${textContent.length} text blocks from lesson`);
+
+    // Join all text without substring limit to preserve all content
+    const fullText = textContent.join("\n\n");
+    
+    console.log(
+      `📏 Total text length: ${fullText.length} characters (${textContent.length} blocks)`
+    );
+
+    return fullText;
   };
 
   const handleTranslateToHinglish = async () => {
@@ -28,18 +64,21 @@ const HinglishTranslator = ({ lesson = {} }) => {
       setLoading(true);
       setError(null);
       setHinglishText(null);
+      setAudioAvailable(false);
 
       const text = extractLessonText();
       if (!text) {
         setError("No lesson content available to translate");
+        console.warn("No text extracted for translation");
         return;
       }
 
-      // FIXED: Use process.env for CRA (not import.meta.env)
-      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      const API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
       console.log("🌐 Translating to Hinglish...");
-      console.log(`📍 Using API URL: ${API_URL}`);
+      console.log(`   Lesson: ${lesson.title}`);
+      console.log(`   Text length: ${text.length} characters`);
 
       const response = await fetch(`${API_URL}/enrichment/translate-hinglish`, {
         method: "POST",
@@ -60,7 +99,9 @@ const HinglishTranslator = ({ lesson = {} }) => {
 
       if (data.success) {
         setHinglishText(data.data.hinglishText);
-        console.log("✅ Hinglish translation completed");
+        console.log(
+          `✅ Hinglish translation completed (${data.data.hinglishText.length} characters)`
+        );
       } else {
         throw new Error(data.message || "Translation failed");
       }
@@ -82,45 +123,65 @@ const HinglishTranslator = ({ lesson = {} }) => {
         return;
       }
 
-      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      const API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
-      console.log("🎙️ Generating audio...");
+      console.log("🎙️  Generating audio from Hinglish text...");
 
-      const response = await fetch(`${API_URL}/enrichment/generate-audio`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: hinglishText,
-          language: "hi-IN",
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/enrichment/generate-hinglish-audio`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: hinglishText,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
+      // Get audio blob
       const audioBlob = await response.blob();
+      console.log(`✅ Audio generated (${audioBlob.size} bytes)`);
+
+      // Create object URL for audio
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      const audio = new Audio(audioUrl);
-      setAudioElement(audio);
-      setAudioAvailable(true);
+      // Set audio source
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+        setAudioPlaying(true);
+        setAudioAvailable(true);
+      }
 
-      audio.play();
-      setAudioPlaying(true);
-
-      audio.addEventListener("ended", () => {
-        setAudioPlaying(false);
-      });
-
-      console.log("✅ Audio generated and playing");
+      console.log("🎵 Audio playing...");
     } catch (err) {
       console.error("❌ Audio generation error:", err);
       setError(err.message || "Failed to generate audio");
+      setAudioAvailable(false);
     } finally {
       setAudioLoading(false);
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (audioPlaying) {
+        audioRef.current.pause();
+        setAudioPlaying(false);
+      } else {
+        audioRef.current.play();
+        setAudioPlaying(true);
+      }
     }
   };
 
@@ -132,21 +193,29 @@ const HinglishTranslator = ({ lesson = {} }) => {
       }
 
       setAudioLoading(true);
+      setError(null);
 
-      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      const API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
-      const response = await fetch(`${API_URL}/enrichment/generate-audio`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: hinglishText,
-          language: "hi-IN",
-        }),
-      });
+      console.log("📥 Downloading audio...");
 
-      if (!response.ok) throw new Error("Failed to generate audio");
+      const response = await fetch(
+        `${API_URL}/enrichment/generate-hinglish-audio`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: hinglishText,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to generate audio for download");
+      }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -161,14 +230,27 @@ const HinglishTranslator = ({ lesson = {} }) => {
       console.log("✅ Audio downloaded");
     } catch (err) {
       console.error("❌ Download error:", err);
-      setError("Failed to download audio");
+      setError(err.message || "Failed to download audio");
     } finally {
       setAudioLoading(false);
     }
   };
 
+  const handleAudioEnded = () => {
+    setAudioPlaying(false);
+  };
+
   return (
     <div className="hinglish-translator-container">
+      {/* Hidden audio element */}
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        onPlay={() => setAudioPlaying(true)}
+        onPause={() => setAudioPlaying(false)}
+      />
+
+      {/* Toggle Button */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="hinglish-toggle-button"
@@ -184,8 +266,10 @@ const HinglishTranslator = ({ lesson = {} }) => {
         />
       </button>
 
+      {/* Expanded Content */}
       {expanded && (
         <div className="hinglish-content">
+          {/* Translate Button */}
           {!hinglishText && (
             <button
               onClick={handleTranslateToHinglish}
@@ -206,6 +290,7 @@ const HinglishTranslator = ({ lesson = {} }) => {
             </button>
           )}
 
+          {/* Error Message */}
           {error && (
             <div className="hinglish-error-message">
               <AlertCircle size={18} />
@@ -213,6 +298,7 @@ const HinglishTranslator = ({ lesson = {} }) => {
             </div>
           )}
 
+          {/* Hinglish Text Box */}
           {hinglishText && (
             <div className="hinglish-text-box">
               <h4 className="hinglish-text-title">📝 Hinglish Explanation:</h4>
@@ -222,6 +308,7 @@ const HinglishTranslator = ({ lesson = {} }) => {
                 ))}
               </div>
 
+              {/* Audio Controls */}
               <div className="hinglish-audio-controls">
                 <button
                   onClick={handleGenerateAudio}
@@ -229,45 +316,78 @@ const HinglishTranslator = ({ lesson = {} }) => {
                   className={`hinglish-audio-button ${
                     audioAvailable ? "active" : ""
                   }`}
-                  title="Generate and play audio"
+                  title={audioAvailable ? "Generate audio" : "Generate audio"}
                 >
                   {audioLoading ? (
                     <>
                       <Loader size={16} className="icon-spin" />
                       <span>Generating...</span>
                     </>
+                  ) : audioAvailable ? (
+                    <>
+                      {audioPlaying ? (
+                        <>
+                          <Pause size={16} />
+                          <span>Pause Audio</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={16} />
+                          <span>Play Audio</span>
+                        </>
+                      )}
+                    </>
                   ) : (
                     <>
                       <Volume2 size={16} />
-                      <span>
-                        {audioAvailable
-                          ? audioPlaying
-                            ? "Pause Audio"
-                            : "Play Audio"
-                          : "Generate Audio"}
-                      </span>
+                      <span>Generate Audio</span>
                     </>
                   )}
                 </button>
 
+                {/* Play/Pause Button (shown when audio is available) */}
+                {audioAvailable && (
+                  <button
+                    onClick={handlePlayPause}
+                    disabled={audioLoading}
+                    className="hinglish-audio-button play-pause-btn"
+                    title={audioPlaying ? "Pause" : "Play"}
+                  >
+                    {audioPlaying ? (
+                      <>
+                        <Pause size={16} />
+                        <span>Pause</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={16} />
+                        <span>Play</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Download Button */}
                 <button
                   onClick={handleDownloadAudio}
                   disabled={audioLoading}
                   className="hinglish-audio-button download-btn"
-                  title="Download audio"
+                  title="Download audio as MP3"
                 >
                   <Download size={16} />
                   <span>Download MP3</span>
                 </button>
               </div>
 
+              {/* New Translation Button */}
               <button
                 onClick={() => {
                   setHinglishText(null);
                   setAudioAvailable(false);
                   setAudioPlaying(false);
-                  if (audioElement) {
-                    audioElement.pause();
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = "";
                   }
                 }}
                 className="hinglish-reset-button"

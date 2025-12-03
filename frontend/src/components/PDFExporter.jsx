@@ -13,7 +13,7 @@ const PDFExporter = ({ lesson, courseInfo = {}, lessonId = null }) => {
       setError(null);
       setSuccess(false);
 
-      // FIXED: Use process.env for CRA (not import.meta.env)
+      // Get API URL from environment
       const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
       console.log("📄 Starting PDF export...");
@@ -68,11 +68,374 @@ const PDFExporter = ({ lesson, courseInfo = {}, lessonId = null }) => {
   };
 
   /**
-   * Download as HTML file (user can print to PDF)
+   * Download as HTML file with improved print styling
    */
   const downloadAsHTML = (htmlContent, filename) => {
+    // Add improved print meta tags and styles
+    const enhancedHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Text-to-Learn">
+  <meta name="description" content="Generated course lesson">
+  <title>${filename.replace(".html", "")}</title>
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --secondary-color: #1565c0;
+      --accent-color: #ff9800;
+      --success-color: #4caf50;
+      --text-dark: #1a1a1a;
+      --text-light: #666;
+      --bg-light: #f9f9f9;
+      --bg-code: #f5f5f5;
+      --border-color: #ddd;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+      width: 210mm;
+      height: 297mm;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      color: var(--text-dark);
+      background: white;
+      line-height: 1.8;
+      padding: 0;
+      margin: 0;
+      width: 210mm;
+      height: auto;
+    }
+
+    /* ========== PRINT STYLES ========== */
+    @media print {
+      @page {
+        size: A4;
+        margin: 20mm;
+        orphans: 3;
+        widows: 3;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+
+      .pdf-header,
+      .pdf-objectives,
+      .pdf-content,
+      .pdf-footer {
+        page-break-inside: avoid;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+        page-break-inside: avoid;
+      }
+
+      .pdf-code-block,
+      .pdf-mcq-block,
+      .pdf-video-block {
+        page-break-inside: avoid;
+      }
+
+      img {
+        page-break-inside: avoid;
+        max-width: 100%;
+      }
+
+      a {
+        text-decoration: none;
+        color: var(--primary-color);
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+    }
+
+    /* ========== HEADER ========== */
+    .pdf-header {
+      border-bottom: 3px solid var(--primary-color);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .pdf-header h1 {
+      color: var(--primary-color);
+      font-size: 28px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .pdf-header-meta {
+      color: var(--text-light);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .pdf-header-meta p {
+      margin: 4px 0;
+    }
+
+    /* ========== OBJECTIVES ========== */
+    .pdf-objectives {
+      background: #f5f7fa;
+      border-left: 4px solid var(--primary-color);
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+
+    .pdf-objectives h3 {
+      color: var(--secondary-color);
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .pdf-objectives ul {
+      margin: 0;
+      padding-left: 24px;
+    }
+
+    .pdf-objectives li {
+      margin: 8px 0;
+      color: var(--text-dark);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ========== CONTENT ========== */
+    .pdf-content {
+      line-height: 1.8;
+    }
+
+    .pdf-content h1 {
+      font-size: 28px;
+      color: var(--primary-color);
+      margin: 28px 0 14px 0;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .pdf-content h2 {
+      font-size: 22px;
+      color: var(--secondary-color);
+      margin: 22px 0 12px 0;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .pdf-content h3 {
+      font-size: 18px;
+      color: var(--primary-color);
+      margin: 18px 0 10px 0;
+      font-weight: 600;
+    }
+
+    .pdf-content p {
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-dark);
+      margin: 12px 0;
+      text-align: justify;
+      orphans: 3;
+      widows: 3;
+    }
+
+    /* ========== CODE BLOCKS ========== */
+    .pdf-code-block {
+      background: var(--bg-code) !important;
+      border-left: 4px solid var(--primary-color) !important;
+      padding: 16px !important;
+      margin: 16px 0 !important;
+      font-family: 'Courier New', 'Courier', monospace !important;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+
+    .pdf-code-block strong {
+      color: var(--primary-color);
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pdf-code-block pre {
+      margin: 0 !important;
+      color: var(--text-dark) !important;
+      font-size: 11px !important;
+      white-space: pre-wrap !important;
+      word-wrap: break-word !important;
+      line-height: 1.5 !important;
+      overflow: visible !important;
+    }
+
+    /* ========== VIDEO BLOCKS ========== */
+    .pdf-video-block {
+      background: var(--bg-light) !important;
+      border: 2px dashed var(--border-color) !important;
+      padding: 16px !important;
+      margin: 16px 0 !important;
+      border-radius: 6px;
+    }
+
+    .pdf-video-block p {
+      color: var(--text-light) !important;
+      margin: 0 !important;
+      font-size: 13px !important;
+      font-weight: 500;
+    }
+
+    /* ========== MCQ BLOCKS ========== */
+    .pdf-mcq-block {
+      background: #fff3e0 !important;
+      border: 2px solid var(--accent-color) !important;
+      padding: 16px !important;
+      margin: 16px 0 !important;
+      border-radius: 6px;
+    }
+
+    .pdf-mcq-block strong {
+      color: var(--accent-color);
+      display: block;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .pdf-mcq-option {
+      margin: 10px 0;
+      padding: 10px 12px;
+      background: white !important;
+      border-radius: 4px;
+      color: var(--text-dark);
+      font-size: 12px;
+      line-height: 1.6;
+      border-left: 3px solid transparent;
+    }
+
+    .pdf-mcq-option.correct {
+      background: #e8f5e9 !important;
+      border-left-color: var(--success-color) !important;
+      font-weight: 500;
+    }
+
+    .pdf-mcq-correct-answer {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--accent-color);
+      color: var(--text-dark);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pdf-mcq-explanation {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--accent-color);
+      color: var(--text-light);
+      font-size: 11px;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* ========== FOOTER ========== */
+    .pdf-footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-light);
+      font-size: 10px;
+    }
+
+    /* ========== PAGE BREAK ========== */
+    .pdf-page-break {
+      page-break-after: always;
+      margin: 0;
+      height: 0;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media screen and (max-width: 768px) {
+      body {
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .pdf-header h1 {
+        font-size: 24px;
+      }
+
+      .pdf-content h2 {
+        font-size: 18px;
+      }
+
+      .pdf-content p {
+        font-size: 12px;
+      }
+    }
+
+    @media screen and (max-width: 480px) {
+      body {
+        padding: 12px;
+        font-size: 13px;
+      }
+
+      .pdf-header h1 {
+        font-size: 20px;
+      }
+
+      .pdf-content h2 {
+        font-size: 16px;
+      }
+
+      .pdf-code-block {
+        padding: 12px !important;
+      }
+
+      .pdf-mcq-block {
+        padding: 12px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+${htmlContent}
+  <div class="pdf-footer">
+    <p>Generated by Text-to-Learn | AI-Powered Course Generator</p>
+    <p>Downloaded on ${new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}</p>
+  </div>
+</body>
+</html>`;
+
     const element = document.createElement("a");
-    const file = new Blob([htmlContent], { type: "text/html" });
+    const file = new Blob([enhancedHTML], { type: "text/html;charset=utf-8" });
     element.href = URL.createObjectURL(file);
     element.download = filename.replace(".html", ".html");
     document.body.appendChild(element);
@@ -80,7 +443,7 @@ const PDFExporter = ({ lesson, courseInfo = {}, lessonId = null }) => {
     document.body.removeChild(element);
     URL.revokeObjectURL(element.href);
 
-    console.log("✅ HTML downloaded. Print to PDF using Ctrl+P (Windows) or Cmd+P (Mac)");
+    console.log("✅ HTML downloaded. Print to PDF using Ctrl+P or Cmd+P");
   };
 
   return (
@@ -96,17 +459,17 @@ const PDFExporter = ({ lesson, courseInfo = {}, lessonId = null }) => {
         {loading ? (
           <>
             <Loader size={18} className="icon-spin" />
-            <span>Exporting...</span>
+            <span>Generating PDF...</span>
           </>
         ) : success ? (
           <>
-            <CheckCircle size={18} />
-            <span>Exported!</span>
+            <CheckCircle size={18} className="icon-check" />
+            <span>PDF Ready!</span>
           </>
         ) : error ? (
           <>
             <AlertCircle size={18} />
-            <span>Error</span>
+            <span>Export Failed</span>
           </>
         ) : (
           <>
@@ -118,10 +481,18 @@ const PDFExporter = ({ lesson, courseInfo = {}, lessonId = null }) => {
 
       {error && (
         <div className="pdf-export-error">
-          {error}
-          <p style={{ fontSize: "12px", marginTop: "8px" }}>
-            💡 Tip: You can print the HTML file as PDF using Ctrl+P (Windows) or Cmd+P (Mac)
+          <strong>❌ Export Error</strong>
+          <p>{error}</p>
+          <p>
+            💡 <strong>Tip:</strong> Use Ctrl+P (Windows) or Cmd+P (Mac) to print the HTML file as PDF
           </p>
+        </div>
+      )}
+
+      {success && (
+        <div className="pdf-export-success">
+          <strong>✅ Success!</strong>
+          <p>Your PDF has been downloaded. Use your browser's print function (Ctrl+P / Cmd+P) to convert to PDF.</p>
         </div>
       )}
     </div>

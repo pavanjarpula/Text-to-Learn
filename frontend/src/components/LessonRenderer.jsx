@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   BookmarkPlus,
   Share2,
   ArrowUp,
@@ -51,6 +50,8 @@ const LessonRenderer = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const containerRef = useRef(null);
+  const prevLessonIdRef = useRef(null);
   
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
 
@@ -65,20 +66,77 @@ const LessonRenderer = ({
     [lessonData.content, content]
   );
 
+  // 🔧 STEP 1: Disable browser scroll restoration on mount
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  // 🔧 STEP 2: Enhanced scroll to top function with container focus
+  const scrollToTopImmediate = () => {
+    // Method 1: window.scrollTo
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto' // Use 'auto' for immediate scroll
+    });
+
+    // Method 2: document element
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    // Method 3: Focus on container if it exists
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      containerRef.current.focus({ preventScroll: false });
+    }
+
+    // Method 4: Verify with setTimeout
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 0);
+
+    // Method 5: Another verification after render
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
+
+  // 🔧 STEP 3: Watch for lesson changes and scroll to top
+  useEffect(() => {
+    const currentLessonId = lessonData?._id;
+    
+    // If lesson ID changed, scroll to top
+    if (currentLessonId && currentLessonId !== prevLessonIdRef.current) {
+      console.log(`📚 Lesson changed: ${currentLessonId}`);
+      prevLessonIdRef.current = currentLessonId;
+      
+      // Reset saved state
+      setIsSaved(false);
+      
+      // Scroll to top immediately
+      scrollToTopImmediate();
+    }
+  }, [lessonData?._id]);
+
   // Detect scroll for scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
     };
+    
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTopImmediate();
   };
 
-  // 🔧 FIXED: Handle save lesson with correct endpoint
+  // Handle save lesson
   const handleSaveLesson = async () => {
     if (!isAuthenticated) {
       alert("Please login to save lessons");
@@ -97,7 +155,6 @@ const LessonRenderer = ({
         module: module?.title,
       });
 
-      // Save lesson with course and module context
       const result = await saveLessonWithContext(
         lessonData,
         course?.title || "Unknown Course",
@@ -108,7 +165,6 @@ const LessonRenderer = ({
       console.log("✅ Lesson saved successfully:", result._id);
       setIsSaved(true);
 
-      // Try to mark as complete
       try {
         if (lessonData._id) {
           await markLessonComplete(lessonData._id, token);
@@ -135,10 +191,10 @@ const LessonRenderer = ({
     alert("Share feature coming soon!");
   };
 
-  // 🔧 FIXED: Navigation handlers that properly call parent callbacks
+  // Navigation handlers
   const handlePreviousClick = () => {
     console.log("⬅️ Previous button clicked");
-    console.log("Can go previous:", lessonIdx > 0);
+    scrollToTopImmediate();
     if (onPrevious && typeof onPrevious === "function") {
       onPrevious();
     }
@@ -146,7 +202,7 @@ const LessonRenderer = ({
 
   const handleNextClick = () => {
     console.log("➡️ Next button clicked");
-    console.log("Can go next:", lessonIdx < totalLessons - 1);
+    scrollToTopImmediate();
     if (onNext && typeof onNext === "function") {
       onNext();
     }
@@ -156,17 +212,8 @@ const LessonRenderer = ({
   const canGoPrevious = lessonIdx > 0;
   const canGoNext = lessonIdx < totalLessons - 1;
 
-  console.log("🔍 LessonRenderer state:", {
-    lessonIdx,
-    totalLessons,
-    canGoPrevious,
-    canGoNext,
-    hasOnPrevious: !!onPrevious,
-    hasOnNext: !!onNext,
-  });
-
   return (
-    <div className="lesson-renderer-container">
+    <div className="lesson-renderer-container" ref={containerRef}>
       {/* Lesson Header */}
       <header className="lesson-header">
         <div className="lesson-header-content">

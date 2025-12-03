@@ -444,8 +444,3 @@ const SavedLessonCard = ({ lesson, onView }) => {
 };
 
 export default ProfilePage;
-
-
-
-
-

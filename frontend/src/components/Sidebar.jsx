@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronLeft, Plus, MessageCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -129,6 +128,7 @@ const CourseItem = ({
               key={module._id}
               module={module}
               moduleIndex={idx}
+              course={course}
               isExpanded={expandedModules[module._id]}
               activeLesson={activeLesson}
               onToggle={() => onToggleModule(module._id)}
@@ -144,11 +144,79 @@ const CourseItem = ({
 const ModuleItem = ({
   module,
   moduleIndex,
+  course,
   isExpanded,
   activeLesson,
   onToggle,
   onSelectLesson,
 }) => {
+  // 🔧 FIX: Calculate global lesson index
+  const calculateGlobalLessonIndex = (lessonId) => {
+    let globalIndex = 0;
+    
+    for (let modIdx = 0; modIdx < course.modules.length; modIdx++) {
+      const mod = course.modules[modIdx];
+      if (!mod.lessons) continue;
+
+      for (let lesIdx = 0; lesIdx < mod.lessons.length; lesIdx++) {
+        if (mod.lessons[lesIdx]._id === lessonId) {
+          return globalIndex;
+        }
+        globalIndex++;
+      }
+    }
+    return 0;
+  };
+
+  // 🔧 FIX: Calculate total lessons
+  const getTotalLessons = () => {
+    return course.modules.reduce((total, mod) => {
+      return total + (mod.lessons?.length || 0);
+    }, 0);
+  };
+
+  const handleLessonClick = (lesson, lessonIdx) => {
+    console.log('\n📍 Sidebar: Lesson clicked');
+    
+    // 🔧 STEP 2: Triple verification scroll
+    console.log('🔧 STEP 2: Resetting scroll to top from Sidebar');
+    
+    // Verification 1: Immediate scroll
+    window.scrollTo(0, 0);
+    const check1 = window.scrollY;
+    console.log(`   ✓ Check 1 - Immediate scroll. scrollY = ${check1}`);
+
+    // Verification 2: DOM level scroll
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const check2 = document.documentElement.scrollTop;
+    console.log(`   ✓ Check 2 - DOM scroll. scrollTop = ${check2}`);
+
+    // Verification 3: Delayed scroll (after render)
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const check3 = window.scrollY;
+      console.log(`   ✓ Check 3 - Delayed scroll. scrollY = ${check3}`);
+    }, 0);
+    
+    // Now pass lesson data
+    console.log('📚 Sidebar - Lesson clicked:', lesson.title);
+    
+    const lessonData = {
+      lesson: lesson,
+      module: module,
+      lessonIdx: calculateGlobalLessonIndex(lesson._id),
+      moduleIdx: moduleIndex,
+      course: course,
+      totalLessons: getTotalLessons(),
+    };
+
+    console.log('📚 Sidebar - Sending lesson data:', lessonData);
+    onSelectLesson(lessonData);
+  };
+
   return (
     <div className="module-item">
       <button onClick={onToggle} className="module-header" title={module.title}>
@@ -165,9 +233,9 @@ const ModuleItem = ({
           {module.lessons.map((lesson, idx) => (
             <button
               key={lesson._id}
-              onClick={() => onSelectLesson(lesson)}
+              onClick={() => handleLessonClick(lesson, idx)}
               className={`lesson-item ${
-                activeLesson?._id === lesson._id ? 'active' : ''
+                activeLesson?.lesson?._id === lesson._id || activeLesson?._id === lesson._id ? 'active' : ''
               }`}
               title={lesson.title}
             >

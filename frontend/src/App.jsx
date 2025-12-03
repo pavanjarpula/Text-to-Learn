@@ -25,6 +25,14 @@ function App() {
   };
 
   const handleSelectCourse = (course) => {
+    // 🔧 FIX: Add null/undefined check
+    if (!course) {
+      console.log('App - Course is null, clearing selection');
+      setActiveCourse(null);
+      setActiveLesson(null);
+      return;
+    }
+
     console.log('App - Selecting course:', course.title);
     setActiveCourse(course);
     setActiveLesson(null);

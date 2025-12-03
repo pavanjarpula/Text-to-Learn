@@ -1,16 +1,16 @@
+// src/pages/Profile.jsx - COMPLETE UPDATE
+
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate } from "react-router-dom";
 import {
   getUserCourses,
   deleteCourseById,
-  getUserProfile,
   getUserSavedLessons,
+  deleteLessonById,
 } from "../utils/api";
 import {
   Trash2,
   Eye,
-  Plus,
   LogOut,
   Settings,
   BookOpen,
@@ -21,20 +21,19 @@ import {
 } from "lucide-react";
 import "./Profile.css";
 
-const ProfilePage = () => {
+const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
   const { user, isAuthenticated, logout, getAccessTokenSilently } = useAuth0();
-  const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
   const [savedLessons, setSavedLessons] = useState([]);
-  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
   const [showSavedLessons, setShowSavedLessons] = useState(false);
 
-  // Fetch user courses and profile
+  // Fetch user data on mount
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -45,23 +44,22 @@ const ProfilePage = () => {
       try {
         const token = await getAccessTokenSilently();
 
-        // Fetch user courses
+        // Fetch saved courses
+        console.log("📚 Profile - Fetching saved courses...");
         const coursesData = await getUserCourses(token);
         setCourses(coursesData || []);
 
         // Fetch saved lessons
-        const savedLessonsData = await getUserSavedLessons(token);
-        setSavedLessons(savedLessonsData || []);
+        console.log("📖 Profile - Fetching saved lessons...");
+        const lessonsData = await getUserSavedLessons(token);
+        setSavedLessons(lessonsData || []);
 
-        // Fetch user profile
-        try {
-          const profileData = await getUserProfile(token);
-          setUserProfile(profileData);
-        } catch (profileErr) {
-          console.warn("Could not fetch profile data:", profileErr);
-        }
+        console.log("✅ Profile - User data loaded:", {
+          courses: coursesData?.length,
+          lessons: lessonsData?.length,
+        });
       } catch (err) {
-        console.error("Failed to load user data:", err);
+        console.error("❌ Profile - Error loading user data:", err);
         setError(err.message || "Failed to load your data");
       } finally {
         setLoading(false);
@@ -71,6 +69,7 @@ const ProfilePage = () => {
     loadUserData();
   }, [isAuthenticated, getAccessTokenSilently]);
 
+  // Handle delete course
   const handleDeleteCourse = async (courseId) => {
     setDeleting(courseId);
     try {
@@ -78,29 +77,65 @@ const ProfilePage = () => {
       await deleteCourseById(courseId, token);
       setCourses(courses.filter((c) => c._id !== courseId));
       setDeleteConfirm(null);
+      console.log("✅ Course deleted");
     } catch (err) {
-      console.error("Failed to delete course:", err);
+      console.error("❌ Error deleting course:", err);
       setError("Failed to delete course");
     } finally {
       setDeleting(null);
     }
   };
 
+  // Handle delete lesson
+  const handleDeleteLesson = async (lessonId) => {
+    setDeleting(lessonId);
+    try {
+      const token = await getAccessTokenSilently();
+      await deleteLessonById(lessonId, token);
+      setSavedLessons(savedLessons.filter((l) => l._id !== lessonId));
+      setDeleteConfirm(null);
+      console.log("✅ Lesson deleted");
+    } catch (err) {
+      console.error("❌ Error deleting lesson:", err);
+      setError("Failed to delete lesson");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Handle logout
   const handleLogout = () => {
     logout({ returnTo: window.location.origin });
   };
 
-  // Handle viewing saved lesson
-  const handleViewSavedLesson = (lesson) => {
-    console.log("Viewing saved lesson:", lesson.title);
-    // Navigate to lesson page with the saved lesson data
-    navigate("/lesson", {
-      state: {
-        lesson: lesson,
-        courseTitle: lesson.courseTitle,
-        moduleName: lesson.moduleName,
-      },
-    });
+  // Handle view saved course
+  const handleViewCourse = (course) => {
+    console.log("👁️ Viewing course:", course.title);
+    if (onSelectCourse && typeof onSelectCourse === "function") {
+      onSelectCourse(course);
+    }
+  };
+
+  // Handle view saved lesson
+  const handleViewLesson = (lesson) => {
+    console.log("👁️ Viewing lesson:", lesson.title);
+
+    if (onSelectLesson && typeof onSelectLesson === "function") {
+      onSelectLesson({
+        lesson,
+        module: {
+          _id: "virtual",
+          title: lesson.moduleName || "Module",
+          lessons: [lesson],
+        },
+        course: {
+          _id: "virtual",
+          title: lesson.courseTitle || "Course",
+        },
+        moduleIdx: 0,
+        lessonIdx: 0,
+      });
+    }
   };
 
   if (!isAuthenticated) {
@@ -130,10 +165,7 @@ const ProfilePage = () => {
         <div className="profile-error-banner">
           <AlertCircle size={20} />
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="error-close"
-          >
+          <button onClick={() => setError(null)} className="error-close">
             ✕
           </button>
         </div>
@@ -145,7 +177,9 @@ const ProfilePage = () => {
           {/* Avatar Section */}
           <div className="profile-avatar-section">
             <img
-              src={user?.picture || "https://api.dicebear.com/7.x/avataaars/svg"}
+              src={
+                user?.picture || "https://api.dicebear.com/7.x/avataaars/svg"
+              }
               alt={user?.name || "User"}
               className="profile-avatar"
               onError={(e) => {
@@ -158,22 +192,15 @@ const ProfilePage = () => {
                 {user?.name || user?.nickname || "User"}
               </h1>
               <p className="profile-user-email">{user?.email}</p>
-              <p className="profile-user-id">ID: {user?.sub?.substring(0, 12)}...</p>
+              <p className="profile-user-id">
+                ID: {user?.sub?.substring(0, 12)}...
+              </p>
             </div>
           </div>
 
           {/* Header Actions */}
           <div className="profile-header-actions">
-            <button
-              onClick={() => navigate("/")}
-              className="action-btn create-btn"
-              title="Create new course"
-            >
-              <Plus size={18} />
-              <span>New Course</span>
-            </button>
-
-            {/* 🔧 SAVED LESSONS BUTTON */}
+            {/* Saved Lessons Toggle Button */}
             <button
               onClick={() => setShowSavedLessons(!showSavedLessons)}
               className={`action-btn saved-lessons-btn ${
@@ -182,19 +209,18 @@ const ProfilePage = () => {
               title="View saved lessons"
             >
               <BookmarkCheck size={18} />
-              <span>
-                Saved Lessons ({savedLessons.length})
-              </span>
+              <span>Saved Lessons ({savedLessons.length})</span>
             </button>
 
             <button
               onClick={() => {}}
               className="action-btn settings-btn"
-              title="Settings"
+              title="Settings (coming soon)"
             >
               <Settings size={18} />
               <span>Settings</span>
             </button>
+
             <button
               onClick={handleLogout}
               className="action-btn logout-btn"
@@ -234,7 +260,7 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <main className="profile-main">
-        {/* 🔧 SAVED LESSONS SECTION */}
+        {/* Saved Lessons Section */}
         {showSavedLessons && (
           <section className="profile-saved-lessons-section">
             <div className="section-header">
@@ -242,7 +268,7 @@ const ProfilePage = () => {
                 <BookmarkCheck size={20} />
                 Your Saved Lessons
               </h2>
-              <span className="lesson-count">{savedLessons.length} saved</span>
+              <span className="lesson-count">{savedLessons.length}</span>
             </div>
 
             {loading ? (
@@ -262,7 +288,12 @@ const ProfilePage = () => {
                   <SavedLessonCard
                     key={lesson._id}
                     lesson={lesson}
-                    onView={() => handleViewSavedLesson(lesson)}
+                    onView={() => handleViewLesson(lesson)}
+                    onDelete={() => {
+                      setDeleteConfirm(lesson._id);
+                      setDeleteType("lesson");
+                    }}
+                    isDeleting={deleting === lesson._id}
                   />
                 ))}
               </div>
@@ -270,11 +301,14 @@ const ProfilePage = () => {
           </section>
         )}
 
-        {/* My Courses Section */}
+        {/* Saved Courses Section */}
         <section className="profile-courses-section">
           <div className="section-header">
-            <h2>Your Courses</h2>
-            <span className="course-count">{courses.length} total</span>
+            <h2>
+              <BookOpen size={20} />
+              Your Courses
+            </h2>
+            <span className="course-count">{courses.length}</span>
           </div>
 
           {loading ? (
@@ -286,14 +320,7 @@ const ProfilePage = () => {
             <div className="empty-state">
               <BookOpen size={48} />
               <h3>No Courses Yet</h3>
-              <p>Start by creating your first AI-powered course</p>
-              <button
-                onClick={() => navigate("/")}
-                className="empty-state-btn"
-              >
-                <Plus size={18} />
-                Create Course
-              </button>
+              <p>Generate your first AI-powered course to get started</p>
             </div>
           ) : (
             <div className="courses-grid">
@@ -301,8 +328,11 @@ const ProfilePage = () => {
                 <CourseCard
                   key={course._id}
                   course={course}
-                  onView={() => navigate(`/course/${course._id}`)}
-                  onDelete={() => setDeleteConfirm(course._id)}
+                  onView={() => handleViewCourse(course)}
+                  onDelete={() => {
+                    setDeleteConfirm(course._id);
+                    setDeleteType("course");
+                  }}
                   isDeleting={deleting === course._id}
                 />
               ))}
@@ -315,25 +345,38 @@ const ProfilePage = () => {
       {deleteConfirm && (
         <div className="delete-modal-overlay">
           <div className="delete-modal">
-            <h3>Delete Course?</h3>
+            <h3>
+              Delete {deleteType === "course" ? "Course" : "Lesson"}?
+            </h3>
             <p>
-              Are you sure you want to delete "
-              {courses.find((c) => c._id === deleteConfirm)?.title}"? This action
+              Are you sure you want to delete this{" "}
+              {deleteType === "course" ? "course" : "lesson"}? This action
               cannot be undone.
             </p>
             <div className="modal-actions">
               <button
-                onClick={() => setDeleteConfirm(null)}
+                onClick={() => {
+                  setDeleteConfirm(null);
+                  setDeleteType(null);
+                }}
                 className="modal-btn cancel-btn"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleDeleteCourse(deleteConfirm)}
+                onClick={() => {
+                  if (deleteType === "course") {
+                    handleDeleteCourse(deleteConfirm);
+                  } else {
+                    handleDeleteLesson(deleteConfirm);
+                  }
+                }}
                 disabled={deleting === deleteConfirm}
                 className="modal-btn delete-btn"
               >
-                {deleting === deleteConfirm ? "Deleting..." : "Delete"}
+                {deleting === deleteConfirm
+                  ? "Deleting..."
+                  : "Delete"}
               </button>
             </div>
           </div>
@@ -402,19 +445,27 @@ const CourseCard = ({ course, onView, onDelete, isDeleting }) => {
 };
 
 /**
- * 🔧 NEW: Saved Lesson Card Component
+ * Saved Lesson Card Component
  */
-const SavedLessonCard = ({ lesson, onView }) => {
+const SavedLessonCard = ({ lesson, onView, onDelete, isDeleting }) => {
   return (
     <div className="saved-lesson-card">
       <div className="saved-lesson-header">
-        <div>
+        <div className="saved-lesson-info">
           <h3 className="saved-lesson-title">{lesson.title}</h3>
           <p className="saved-lesson-course">{lesson.courseTitle}</p>
           {lesson.moduleName && (
             <p className="saved-lesson-module">📖 {lesson.moduleName}</p>
           )}
         </div>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          className="lesson-delete-btn"
+          title="Delete lesson"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
       {lesson.objectives && lesson.objectives.length > 0 && (

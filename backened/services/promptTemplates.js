@@ -1,38 +1,537 @@
-// backend/services/promptTemplates.js - CONCRETE CONTENT GENERATION
+// backend/services/promptTemplates.js - UPDATED WITH CONTEXT-AWARE CODE
 
 /**
- * Determine lesson importance and depth level
+ * Determine the most appropriate programming language for the course/lesson
  */
-function getLessonContext(
-  courseTitle,
-  moduleTitle,
-  lessonTitle,
-  moduleIndex,
-  lessonIndex,
-  totalModules,
-  totalLessons
-) {
-  const isFoundational = moduleIndex === 0 && lessonIndex === 0;
-  const isAdvanced = moduleIndex >= totalModules - 2;
-  const isIntroductory = moduleIndex === 0;
-  const isCulminating = lessonIndex === totalLessons - 1;
+function determineLanguage(courseTitle, moduleTitle, lessonTitle) {
+  const fullContext =
+    `${courseTitle} ${moduleTitle} ${lessonTitle}`.toLowerCase();
 
-  return {
-    isFoundational,
-    isAdvanced,
-    isIntroductory,
-    isCulminating,
-    depth: isFoundational
-      ? "foundational"
-      : isAdvanced
-      ? "advanced"
-      : "intermediate",
-    position: `lesson ${lessonIndex + 1} of ${totalLessons}`,
-  };
+  // Web Development
+  if (
+    fullContext.includes("react") ||
+    fullContext.includes("vue") ||
+    fullContext.includes("angular")
+  ) {
+    return "jsx";
+  }
+  if (
+    fullContext.includes("node") ||
+    fullContext.includes("express") ||
+    fullContext.includes("backend")
+  ) {
+    return "javascript";
+  }
+  if (fullContext.includes("html") || fullContext.includes("css")) {
+    return "html";
+  }
+
+  // Mobile Development
+  if (fullContext.includes("swift") || fullContext.includes("ios")) {
+    return "swift";
+  }
+  if (fullContext.includes("kotlin") || fullContext.includes("android")) {
+    return "kotlin";
+  }
+
+  // Data & AI
+  if (
+    fullContext.includes("machine learning") ||
+    fullContext.includes("tensorflow") ||
+    fullContext.includes("pytorch") ||
+    fullContext.includes("data") ||
+    fullContext.includes("ai") ||
+    fullContext.includes("analysis")
+  ) {
+    return "python";
+  }
+
+  // Backend & Systems
+  if (fullContext.includes("java") || fullContext.includes("spring")) {
+    return "java";
+  }
+  if (fullContext.includes("go") || fullContext.includes("golang")) {
+    return "go";
+  }
+  if (fullContext.includes("rust")) {
+    return "rust";
+  }
+  if (
+    fullContext.includes("c#") ||
+    fullContext.includes("csharp") ||
+    fullContext.includes(".net")
+  ) {
+    return "csharp";
+  }
+  if (fullContext.includes("sql") || fullContext.includes("database")) {
+    return "sql";
+  }
+
+  // Default
+  return "python";
 }
 
 /**
- * Generate a comprehensive prompt for course creation
+ * Generate language-specific code example
+ */
+function generateCodeForLanguage(
+  language,
+  courseTitle,
+  moduleTitle,
+  lessonTitle
+) {
+  const sanitize = (text) => text.replace(/[^a-zA-Z0-9]/g, "").substring(0, 30);
+  const className = sanitize(lessonTitle);
+
+  const templates = {
+    jsx: `import React, { useState, useCallback } from 'react';
+
+/**
+ * ${lessonTitle} Component
+ * Demonstrates: ${moduleTitle}
+ */
+export const ${className}Component = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Handle execution of ${lessonTitle}
+  const handle${className} = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Execute ${lessonTitle} logic
+      const response = await fetch('/api/${lessonTitle
+        .toLowerCase()
+        .replace(/\\s/g, "-")}');
+      const result = await response.json();
+      setData(result);
+      console.log('✅ ${lessonTitle} completed');
+    } catch (err) {
+      setError(err.message);
+      console.error('❌ ${lessonTitle} error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return (
+    <div className="component">
+      <h3>${lessonTitle}</h3>
+      <button onClick={handle${className}} disabled={loading}>
+        {loading ? 'Processing...' : 'Execute ${lessonTitle}'}
+      </button>
+      {error && <div className="error">{error}</div>}
+      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+    </div>
+  );
+};
+
+export default ${className}Component;`,
+
+    javascript: `/**
+ * ${lessonTitle}
+ * Module: ${moduleTitle} | Course: ${courseTitle}
+ */
+
+class ${className} {
+  constructor(options = {}) {
+    this.options = options;
+    console.log('🚀 ${lessonTitle} initialized');
+  }
+
+  /**
+   * Execute ${lessonTitle} operation
+   * @param {Object} input - Input data
+   * @returns {Object} Results of ${lessonTitle}
+   */
+  async execute(input) {
+    try {
+      console.log('⚙️  Processing ${lessonTitle}...');
+      
+      // Validate input
+      this.validate(input);
+      
+      // Process data
+      const processed = await this.process(input);
+      
+      // Generate output
+      const output = this.generate(processed);
+      
+      console.log('✅ ${lessonTitle} completed successfully');
+      return output;
+    } catch (error) {
+      console.error('❌ ${lessonTitle} error:', error);
+      throw error;
+    }
+  }
+
+  validate(input) {
+    if (!input) throw new Error('Input required for ${lessonTitle}');
+    return true;
+  }
+
+  async process(data) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          ...data,
+          processed: true,
+          processedAt: new Date().toISOString()
+        });
+      }, 100);
+    });
+  }
+
+  generate(data) {
+    return {
+      success: true,
+      data: data,
+      message: '${lessonTitle} operation completed'
+    };
+  }
+}
+
+// Usage
+const handler = new ${className}();
+handler.execute({ sample: 'data' }).then(result => {
+  console.log('Result:', result);
+}).catch(err => console.error(err));`,
+
+    python: `"""
+${lessonTitle}
+Module: ${moduleTitle}
+Course: ${courseTitle}
+"""
+
+import logging
+from typing import Dict, Any, Optional
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class ${className}:
+    """
+    Handler for ${lessonTitle}
+    
+    This class demonstrates best practices for implementing
+    ${lessonTitle} in Python.
+    """
+    
+    def __init__(self, config: Optional[Dict] = None):
+        """Initialize ${lessonTitle} handler"""
+        self.config = config or {}
+        logger.info(f'${lessonTitle} handler initialized')
+    
+    def validate(self, data: Dict) -> bool:
+        """Validate input for ${lessonTitle}"""
+        if not data:
+            raise ValueError('Data required for ${lessonTitle}')
+        return True
+    
+    def process(self, data: Dict) -> Dict:
+        """Process data for ${lessonTitle}"""
+        logger.info(f'Processing ${lessonTitle}...')
+        
+        processed = {
+            **data,
+            'processed': True,
+            'status': 'completed'
+        }
+        
+        return processed
+    
+    def generate(self, data: Dict) -> Dict:
+        """Generate results for ${lessonTitle}"""
+        return {
+            'success': True,
+            'data': data,
+            'message': '${lessonTitle} operation completed'
+        }
+    
+    def execute(self, input_data: Dict) -> Dict:
+        """
+        Execute complete ${lessonTitle} pipeline
+        
+        Args:
+            input_data: Input data for ${lessonTitle}
+            
+        Returns:
+            Results of ${lessonTitle} execution
+        """
+        try:
+            logger.info(f'Starting ${lessonTitle} execution')
+            
+            # Step 1: Validate
+            self.validate(input_data)
+            
+            # Step 2: Process
+            processed = self.process(input_data)
+            
+            # Step 3: Generate
+            result = self.generate(processed)
+            
+            logger.info(f'✅ ${lessonTitle} completed successfully')
+            return result
+            
+        except Exception as error:
+            logger.error(f'❌ ${lessonTitle} error: {error}')
+            raise
+
+# Example usage
+if __name__ == '__main__':
+    handler = ${className}({'debug': True})
+    
+    sample_data = {'input': 'sample'}
+    result = handler.execute(sample_data)
+    print('Result:', result)`,
+
+    java: `/**
+ * ${lessonTitle}
+ * Module: ${moduleTitle}
+ */
+
+import java.util.*;
+import java.util.logging.*;
+
+public class ${className} {
+    private static final Logger logger = Logger.getLogger(${className}.class.getName());
+    private Map<String, Object> config;
+
+    /**
+     * Initialize ${lessonTitle} handler
+     */
+    public ${className}(Map<String, Object> config) {
+        this.config = config != null ? config : new HashMap<>();
+        logger.info("${lessonTitle} handler initialized");
+    }
+
+    /**
+     * Validate input for ${lessonTitle}
+     */
+    private void validate(Map<String, Object> input) throws IllegalArgumentException {
+        if (input == null || input.isEmpty()) {
+            throw new IllegalArgumentException("Input required for ${lessonTitle}");
+        }
+    }
+
+    /**
+     * Process data for ${lessonTitle}
+     */
+    private Map<String, Object> process(Map<String, Object> data) {
+        logger.info("Processing ${lessonTitle}...");
+        
+        Map<String, Object> result = new HashMap<>(data);
+        result.put("processed", true);
+        result.put("status", "completed");
+        
+        return result;
+    }
+
+    /**
+     * Generate results for ${lessonTitle}
+     */
+    private Map<String, Object> generate(Map<String, Object> data) {
+        Map<String, Object> output = new HashMap<>();
+        output.put("success", true);
+        output.put("data", data);
+        output.put("message", "${lessonTitle} operation completed");
+        
+        return output;
+    }
+
+    /**
+     * Execute complete ${lessonTitle} pipeline
+     */
+    public Map<String, Object> execute(Map<String, Object> inputData) {
+        try {
+            logger.info("Starting ${lessonTitle} execution");
+            
+            validate(inputData);
+            Map<String, Object> processed = process(inputData);
+            Map<String, Object> result = generate(processed);
+            
+            logger.info("✅ ${lessonTitle} completed successfully");
+            return result;
+            
+        } catch (Exception error) {
+            logger.severe("❌ ${lessonTitle} error: " + error.getMessage());
+            throw new RuntimeException(error);
+        }
+    }
+
+    // Example usage
+    public static void main(String[] args) {
+        Map<String, Object> config = new HashMap<>();
+        config.put("debug", true);
+        
+        ${className} handler = new ${className}(config);
+        
+        Map<String, Object> input = new HashMap<>();
+        input.put("input", "sample");
+        
+        Map<String, Object> result = handler.execute(input);
+        System.out.println("Result: " + result);
+    }
+}`,
+
+    sql: `-- ${lessonTitle}
+-- Module: ${moduleTitle}
+-- Course: ${courseTitle}
+
+/**
+ * This SQL example demonstrates ${lessonTitle}
+ * Best practices for ${moduleTitle}
+ */
+
+-- Create table for ${lessonTitle}
+CREATE TABLE IF NOT EXISTS \`${className.toLowerCase()}\` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+);
+
+-- Insert sample data for ${lessonTitle}
+INSERT INTO \`${className.toLowerCase()}\` (name, description, status) VALUES
+    ('Sample 1', 'First example of ${lessonTitle}', 'active'),
+    ('Sample 2', 'Second example of ${lessonTitle}', 'active'),
+    ('Sample 3', 'Third example of ${lessonTitle}', 'inactive');
+
+-- Query to demonstrate ${lessonTitle}
+SELECT 
+    id,
+    name,
+    description,
+    status,
+    created_at,
+    COUNT(*) OVER () as total_count
+FROM \`${className.toLowerCase()}\`
+WHERE status = 'active'
+ORDER BY created_at DESC;
+
+-- Update example for ${lessonTitle}
+UPDATE \`${className.toLowerCase()}\`
+SET 
+    description = CONCAT(description, ' - Updated'),
+    status = 'updated'
+WHERE id = 1;
+
+-- Delete example for ${lessonTitle}
+DELETE FROM \`${className.toLowerCase()}\`
+WHERE status = 'inactive'
+LIMIT 10;
+
+-- Aggregation example for ${lessonTitle}
+SELECT 
+    status,
+    COUNT(*) as count,
+    MAX(created_at) as latest,
+    MIN(created_at) as oldest
+FROM \`${className.toLowerCase()}\`
+GROUP BY status
+HAVING count > 0;`,
+
+    go: `package main
+
+import (
+	"fmt"
+	"log"
+)
+
+/**
+ * ${lessonTitle}
+ * Module: ${moduleTitle}
+ * Course: ${courseTitle}
+ */
+
+type ${className} struct {
+	Config map[string]interface{}
+}
+
+// New${className} creates a new instance of ${lessonTitle}
+func New${className}(config map[string]interface{}) *${className} {
+	if config == nil {
+		config = make(map[string]interface{})
+	}
+	log.Println("🚀 ${lessonTitle} initialized")
+	return &${className}{Config: config}
+}
+
+// Validate checks input for ${lessonTitle}
+func (h *${className}) Validate(input map[string]interface{}) error {
+	if input == nil || len(input) == 0 {
+		return fmt.Errorf("input required for ${lessonTitle}")
+	}
+	return nil
+}
+
+// Process handles data processing for ${lessonTitle}
+func (h *${className}) Process(data map[string]interface{}) map[string]interface{} {
+	log.Println("⚙️  Processing ${lessonTitle}...")
+	
+	result := make(map[string]interface{})
+	for k, v := range data {
+		result[k] = v
+	}
+	result["processed"] = true
+	result["status"] = "completed"
+	
+	return result
+}
+
+// Generate creates output for ${lessonTitle}
+func (h *${className}) Generate(data map[string]interface{}) map[string]interface{} {
+	output := map[string]interface{}{
+		"success": true,
+		"data": data,
+		"message": "${lessonTitle} operation completed",
+	}
+	return output
+}
+
+// Execute runs the complete ${lessonTitle} pipeline
+func (h *${className}) Execute(input map[string]interface{}) (map[string]interface{}, error) {
+	log.Println("Starting ${lessonTitle} execution")
+	
+	if err := h.Validate(input); err != nil {
+		log.Printf("❌ Validation error: %v", err)
+		return nil, err
+	}
+	
+	processed := h.Process(input)
+	result := h.Generate(processed)
+	
+	log.Println("✅ ${lessonTitle} completed successfully")
+	return result, nil
+}
+
+// Main function demonstrates usage
+func main() {
+	handler := New${className}(map[string]interface{}{"debug": true})
+	
+	input := map[string]interface{}{"input": "sample"}
+	result, err := handler.Execute(input)
+	
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	
+	fmt.Println("Result:", result)
+}`,
+  };
+
+  return templates[language] || templates.python;
+}
+
+/**
+ * Generate a comprehensive prompt for course creation (UNCHANGED)
  */
 exports.generateCoursePrompt = (
   topic
@@ -62,8 +561,7 @@ STRICT REQUIREMENTS:
 OUTPUT ONLY THE JSON OBJECT. START WITH { END WITH }`;
 
 /**
- * FIXED: Generate CONCRETE, SPECIFIC lesson content
- * NO template variables in paragraphs - all actual content
+ * IMPROVED: Generate TRULY UNIQUE, CONTEXTUAL lesson content with LANGUAGE-SPECIFIC CODE
  */
 exports.generateLessonPrompt = (
   courseTitle,
@@ -74,6 +572,17 @@ exports.generateLessonPrompt = (
   totalModules = 4,
   totalLessons = 16
 ) => {
+  // Determine appropriate language for this course
+  const language = determineLanguage(courseTitle, moduleTitle, lessonTitle);
+
+  // Generate language-specific code example
+  const codeExample = generateCodeForLanguage(
+    language,
+    courseTitle,
+    moduleTitle,
+    lessonTitle
+  );
+
   const context = getLessonContext(
     courseTitle,
     moduleTitle,
@@ -84,114 +593,148 @@ exports.generateLessonPrompt = (
     totalLessons
   );
 
+  const contentStrategy = getContentStrategy(context, lessonTitle);
+  const mcqStrategy = generateMCQStrategy(
+    context,
+    lessonTitle,
+    contentStrategy
+  );
+
   let depthGuidance = "";
   if (context.isFoundational) {
-    depthGuidance = `This is a FOUNDATIONAL lesson (first in the course). 
-    - Use beginner-friendly language
-    - Explain basic definitions clearly
-    - Provide simple, relatable examples
-    - Don't assume prior knowledge
-    - Build confidence in learners`;
-  } else if (context.isAdvanced) {
-    depthGuidance = `This is an ADVANCED lesson (in final modules).
-    - Assume learners have foundation knowledge
-    - Focus on complex scenarios and edge cases
-    - Discuss optimization and performance
-    - Cover professional best practices
-    - Reference earlier concepts as foundation`;
+    depthGuidance = `FOUNDATIONAL LESSON - First lesson in course:
+    - Use beginner-friendly language with clear definitions
+    - Explain basic concepts thoroughly
+    - Start with "why should I care about this?"
+    - Use simple, relatable examples
+    - Don't assume any prior knowledge`;
+  } else if (context.isAdvancedLesson) {
+    depthGuidance = `ADVANCED LESSON - In final modules:
+    - Assume strong foundation knowledge
+    - Focus on nuances, edge cases, and optimization
+    - Discuss performance implications
+    - Cover professional standards
+    - Reference earlier concepts briefly`;
   } else {
-    depthGuidance = `This is an INTERMEDIATE lesson.
-    - Build on foundational concepts
-    - Include practical, real-world scenarios
-    - Show common implementation patterns
-    - Discuss trade-offs and considerations
-    - Connect to broader concepts in ${courseTitle}`;
+    depthGuidance = `INTERMEDIATE LESSON - Building knowledge progression:
+    - Assume learners have basic foundation
+    - Introduce practical applications
+    - Show real-world usage patterns
+    - Discuss trade-offs
+    - Connect to surrounding lessons`;
   }
 
-  const prompt = `You are an expert educator creating a lesson about: "${lessonTitle}"
+  let contentStructure = "";
+  if (contentStrategy.type === "synthesis") {
+    contentStructure = `CONTENT STRUCTURE (Synthesis Lesson):
+    1. Key Concepts Summary - Recap main ideas
+    2. Relationships Between Topics - Show how concepts connect
+    3. Common Patterns - Identify recurring themes
+    4. Integration Points - Show connections to other modules`;
+  } else if (contentStrategy.type === "practical") {
+    contentStructure = `CONTENT STRUCTURE (Practical Lesson):
+    1. Getting Started - Quick setup
+    2. Step-by-Step Implementation - Concrete walkthrough
+    3. Debugging and Common Issues - Real problems and solutions
+    4. Optimization Tips - Best practices`;
+  } else if (contentStrategy.type === "conceptual") {
+    contentStructure = `CONTENT STRUCTURE (Conceptual Lesson):
+    1. Core Concept Explained - What and why
+    2. Why This Matters - Context
+    3. Key Terminology - Essential terms
+    4. Context - How this fits into "${courseTitle}"`;
+  } else {
+    contentStructure = `CONTENT STRUCTURE (Technical Lesson):
+    1. What You Need to Know - Core concepts
+    2. How It Works - Mechanics
+    3. When to Use It - Applications
+    4. Common Patterns - Best practices`;
+  }
+
+  const prompt = `You are an expert educator creating a UNIQUE lesson: "${lessonTitle}"
 
 LESSON METADATA:
-- Course: ${courseTitle}
-- Module: ${moduleTitle}
-- Lesson Title: ${lessonTitle}
+- Course: "${courseTitle}"
+- Module: "${moduleTitle}"
+- Lesson: "${lessonTitle}"
+- Type: ${contentStrategy.type}
 - Depth Level: ${context.depth}
-- Position: ${context.position}
+- Programming Language: ${language.toUpperCase()}
 
-DEPTH GUIDELINES:
 ${depthGuidance}
 
-CRITICAL: Create REAL, SPECIFIC content - NOT templates or placeholders.
-Each paragraph must contain ACTUAL educational content about ${lessonTitle}.
+${contentStructure}
+
+CRITICAL INSTRUCTIONS:
+1. Generate REAL, SPECIFIC content - NOT generic templates
+2. Content MUST be unique to "${lessonTitle}" - different from other lessons
+3. All paragraphs must contain ACTUAL educational content
+4. MCQ questions must be SPECIFIC to content taught in THIS lesson
 
 RESPOND WITH ONLY VALID JSON. NO MARKDOWN, NO CODE FENCES, NO EXPLANATIONS.
 
 {
   "title": "${lessonTitle}",
   "depth": "${context.depth}",
+  "type": "${contentStrategy.type}",
+  "language": "${language}",
   "objectives": [
-    "Students will be able to understand key concepts of ${lessonTitle}",
-    "Students will be able to apply ${lessonTitle} in practical contexts",
-    "Students will be able to evaluate when and how to use ${lessonTitle}"
+    "Objective 1: A specific, measurable learning goal for ${lessonTitle}",
+    "Objective 2: A practical skill related to ${lessonTitle}",
+    "Objective 3: A critical thinking goal for ${lessonTitle}"
   ],
   "content": [
     {
       "type": "heading",
-      "text": "Understanding ${lessonTitle}",
+      "text": "${buildHeading1(contentStrategy, lessonTitle)}",
       "level": 1
     },
     {
       "type": "paragraph",
-      "text": "Write a comprehensive introduction (200+ words) explaining what ${lessonTitle} is in concrete, specific terms. Define the concept clearly with actual details about ${lessonTitle}. Explain why ${lessonTitle} exists and what problem it addresses. This should be detailed and informative, NOT generic or a placeholder. Use specific terminology and concepts relevant to ${lessonTitle}. Make it clear and educational for someone learning ${lessonTitle} for the first time in the context of ${moduleTitle}."
+      "text": "Write a comprehensive introduction (250+ words) SPECIFIC to ${lessonTitle}. Explain what ${lessonTitle} is, why it matters, and what makes it unique. This is NOT generic - contain specific details relevant only to this lesson."
     },
     {
       "type": "heading",
-      "text": "Key Components and How ${lessonTitle} Works",
+      "text": "${buildHeading2(contentStrategy, lessonTitle)}",
       "level": 2
     },
     {
       "type": "paragraph",
-      "text": "Write a detailed technical explanation (200+ words) of how ${lessonTitle} actually works. Break down the mechanisms, components, or principles that make ${lessonTitle} function. This should be completely different from the introduction - focus on the 'how' rather than the 'what'. Explain the internal processes, key steps, important elements, and technical details that someone needs to understand to work with ${lessonTitle}. Be specific and substantive."
+      "text": "Write a detailed explanation (250+ words) SPECIFIC to ${lessonTitle}. Provide concrete details and mechanisms. This must be substantially different from the first paragraph."
     },
     {
       "type": "heading",
-      "text": "Real-World Applications and Practical Use Cases",
+      "text": "${buildHeading3(contentStrategy, lessonTitle)}",
       "level": 2
     },
     {
       "type": "paragraph",
-      "text": "Write a practical, concrete explanation (200+ words) of how ${lessonTitle} is used in real situations. Provide specific, actual examples of where ${lessonTitle} is applied in industry, business, or technology. Discuss specific scenarios, use cases, or situations where someone would use ${lessonTitle}. Include real-world problems that ${lessonTitle} solves. Make this practical and grounded in reality, not theoretical or hypothetical."
+      "text": "Write practical content (250+ words) SPECIFIC to ${lessonTitle}. Include specific examples and scenarios. This should differ in focus from previous paragraphs."
     },
     {
       "type": "heading",
-      "text": "Best Practices, Pitfalls, and Professional Considerations",
+      "text": "${buildHeading4(contentStrategy, lessonTitle)}",
       "level": 2
     },
     {
       "type": "paragraph",
-      "text": "Write a comprehensive guide (200+ words) covering best practices when working with ${lessonTitle}. Include common mistakes people make, what professionals do to use ${lessonTitle} effectively, important considerations, and potential pitfalls to avoid. Discuss quality factors, performance considerations, and professional standards related to ${lessonTitle}. This section should provide actionable wisdom that makes learners better at using ${lessonTitle} in professional settings."
+      "text": "Write the final section (250+ words) SPECIFIC to ${lessonTitle}. Provide actionable insights specific to this lesson. Conclude with unique perspectives."
+    },
+    {
+      "type": "heading",
+      "text": "Practical Example: ${lessonTitle}",
+      "level": 2
     },
     {
       "type": "code",
-      "language": "python",
-      "code": "# Practical Example of ${lessonTitle}\\n# This shows a real, working implementation\\n\\nclass ${lessonTitle.replace(
-    /\\s+/g,
-    ""
-  )}Example:\\n    def __init__(self):\\n        self.data = []\\n        self.status = 'initialized'\\n    \\n    def process(self, input_value):\\n        \\\"\\\"\\\"Process input using ${lessonTitle} principles\\\"\\\"\\\"\\n        result = self.transform(input_value)\\n        self.data.append(result)\\n        return result\\n    \\n    def transform(self, value):\\n        # Actual transformation logic for ${lessonTitle}\\n        return value\\n    \\n    def get_results(self):\\n        return self.data\\n\\n# Usage example\\nexample = ${lessonTitle.replace(
-    /\\s+/g,
-    ""
-  )}Example()\\nresult = example.process('test_input')\\nprint(f'Processed: {result}')"
-    },
-    {
-      "type": "code",
-      "language": "python",
-      "code": "# Advanced Pattern: Production-Ready ${lessonTitle} Implementation\\n# Shows a different approach with more sophisticated techniques\\n\\nimport logging\\nfrom typing import Any, Dict\\n\\nlogger = logging.getLogger(__name__)\\n\\nclass Production${lessonTitle.replace(
-    /\\s+/g,
-    ""
-  )}Handler:\\n    def __init__(self, config: Dict[str, Any]):\\n        self.config = config\\n        self.cache = {}\\n        logger.info(f'Initialized ${lessonTitle} handler with config: {config}')\\n    \\n    def execute(self, task: Any) -> Any:\\n        \\\"\\\"\\\"Execute ${lessonTitle} with error handling and caching\\\"\\\"\\\"\\n        task_id = id(task)\\n        if task_id in self.cache:\\n            logger.debug(f'Returning cached result for task {task_id}')\\n            return self.cache[task_id]\\n        \\n        try:\\n            result = self.process_with_error_handling(task)\\n            self.cache[task_id] = result\\n            return result\\n        except Exception as e:\\n            logger.error(f'Error processing task: {str(e)}')\\n            raise\\n    \\n    def process_with_error_handling(self, task: Any) -> Any:\\n        # Complex processing logic\\n        return task"
+      "language": "${language}",
+      "code": ${JSON.stringify(codeExample)},
+      "heading": "How to Implement ${lessonTitle}",
+      "explanation": "This example demonstrates best practices for ${lessonTitle}. It shows how to structure code, handle errors, and follow ${language.toUpperCase()} conventions."
     },
     {
       "type": "video",
-      "query": "${lessonTitle} complete tutorial with examples and practical applications"
+      "query": "${lessonTitle} tutorial with practical examples and detailed explanation"
     },
     {
       "type": "heading",
@@ -200,92 +743,175 @@ RESPOND WITH ONLY VALID JSON. NO MARKDOWN, NO CODE FENCES, NO EXPLANATIONS.
     },
     {
       "type": "mcq",
-      "question": "What is the primary definition or core concept of ${lessonTitle}?",
-      "options": [
-        "An incorrect or oversimplified definition",
-        "The correct, specific definition of ${lessonTitle} based on what was taught",
-        "A common misconception about what ${lessonTitle} is",
-        "A definition of a related but different concept"
-      ],
-      "answer": 1,
-      "explanation": "This correctly identifies the specific definition and core concept of ${lessonTitle} as explained in the lesson."
+      "question": "What is a key aspect of ${lessonTitle}?",
+      "options": ["Correct answer about ${lessonTitle}", "Plausible distractor", "Plausible distractor", "Plausible distractor"],
+      "answer": 0,
+      "explanation": "This is correct because it directly relates to ${lessonTitle} as taught in this lesson."
     },
     {
       "type": "mcq",
-      "question": "How does ${lessonTitle} actually function or work internally?",
-      "options": [
-        "An incorrect description of how ${lessonTitle} works",
-        "A correct explanation of the mechanisms and processes of ${lessonTitle}",
-        "A misconception about internal workings",
-        "An explanation of a similar but different concept"
-      ],
+      "question": "How would you apply ${lessonTitle} in practice?",
+      "options": ["Plausible distractor", "Correct practical application", "Plausible distractor", "Plausible distractor"],
       "answer": 1,
-      "explanation": "This correctly describes the actual mechanisms, processes, or internal workings of ${lessonTitle}."
+      "explanation": "This demonstrates proper application of ${lessonTitle}."
     },
     {
       "type": "mcq",
-      "question": "In which real-world scenario would you apply ${lessonTitle}?",
-      "options": [
-        "A scenario where ${lessonTitle} would not be appropriate",
-        "A real, practical scenario where ${lessonTitle} solves an actual problem",
-        "A scenario requiring a different approach or tool",
-        "A hypothetical scenario that doesn't reflect real usage"
-      ],
-      "answer": 1,
-      "explanation": "This identifies a genuine, real-world application where ${lessonTitle} would be the appropriate solution."
+      "question": "Why is ${lessonTitle} important?",
+      "options": ["Plausible distractor", "Plausible distractor", "Correct importance reason", "Plausible distractor"],
+      "answer": 2,
+      "explanation": "This correctly identifies why ${lessonTitle} matters in this context."
     },
     {
       "type": "mcq",
-      "question": "What is a best practice or important consideration when using ${lessonTitle}?",
-      "options": [
-        "A common mistake to avoid",
-        "A professional best practice for working with ${lessonTitle}",
-        "An approach that works but is not optimal",
-        "An outdated method no longer used"
-      ],
-      "answer": 1,
-      "explanation": "This represents professional best practices and important considerations for effectively using ${lessonTitle}."
+      "question": "What is a best practice for ${lessonTitle}?",
+      "options": ["Plausible distractor", "Plausible distractor", "Plausible distractor", "Correct best practice"],
+      "answer": 3,
+      "explanation": "This represents professional best practices for ${lessonTitle}."
     }
   ]
 }
-
-VALIDATION CHECKLIST - Do NOT respond unless:
-✓ All 4 paragraphs contain REAL, SPECIFIC content about ${lessonTitle}
-✓ NO paragraph contains template variables or placeholders
-✓ Each paragraph is 200+ words of actual educational content
-✓ Paragraphs cover different aspects: definition → mechanics → applications → best practices
-✓ Code examples are real Python code that would actually run
-✓ All 4 MCQ questions are specific to ${lessonTitle}, not generic
-✓ MCQ options are realistic and plausible
-✓ Explanations reference specific lesson content
-✓ Video query is specific to ${lessonTitle}
 
 OUTPUT ONLY RAW JSON. START WITH { END WITH }`;
 
   return prompt;
 };
 
-/**
- * Get statistics about lesson content
- */
-exports.getLessonStats = (lesson) => {
-  if (!lesson || !Array.isArray(lesson.content)) return null;
+// Helper functions (KEPT FROM ORIGINAL)
+function getLessonContext(
+  courseTitle,
+  moduleTitle,
+  lessonTitle,
+  moduleIndex,
+  lessonIndex,
+  totalModules,
+  totalLessons
+) {
+  const isFoundational = moduleIndex === 0 && lessonIndex === 0;
+  const isFirstModule = moduleIndex === 0;
+  const isLastModule = moduleIndex >= totalModules - 2;
+  const isFirstLesson = lessonIndex === 0;
+  const isLastLesson = lessonIndex === totalLessons - 1;
+  const isSynthesisLesson =
+    lessonTitle.toLowerCase().includes("summary") ||
+    lessonTitle.toLowerCase().includes("project");
+  const isPracticalLesson =
+    lessonTitle.toLowerCase().includes("practice") ||
+    lessonTitle.toLowerCase().includes("implementation");
+  const isConceptualLesson =
+    lessonTitle.toLowerCase().includes("introduction") ||
+    lessonTitle.toLowerCase().includes("fundamentals");
+  const isAdvancedLesson =
+    lessonTitle.toLowerCase().includes("advanced") || isLastModule;
 
   return {
-    totalBlocks: lesson.content.length,
-    mcqCount: lesson.content.filter((b) => b.type === "mcq").length,
-    headingCount: lesson.content.filter((b) => b.type === "heading").length,
-    paragraphCount: lesson.content.filter((b) => b.type === "paragraph").length,
-    codeCount: lesson.content.filter((b) => b.type === "code").length,
-    videoCount: lesson.content.filter((b) => b.type === "video").length,
-    depth: lesson.depth || "unknown",
-    codeWithContent: lesson.content.filter(
-      (b) => b.type === "code" && b.code && b.code.trim().length > 0
-    ).length,
-    mcqWithQuestions: lesson.content.filter(
-      (b) => b.type === "mcq" && b.question && b.question.trim().length > 0
-    ).length,
+    isFoundational,
+    isFirstModule,
+    isLastModule,
+    isFirstLesson,
+    isLastLesson,
+    isSynthesisLesson,
+    isPracticalLesson,
+    isConceptualLesson,
+    isAdvancedLesson,
+    position: `lesson ${lessonIndex + 1} of ${totalLessons}`,
+    depth: isFoundational
+      ? "foundational"
+      : isLastModule
+      ? "advanced"
+      : "intermediate",
   };
-};
+}
+
+function getContentStrategy(context, lessonTitle) {
+  if (context.isSynthesisLesson) {
+    return {
+      type: "synthesis",
+      sections: ["Summary", "Connections", "Patterns", "Integration"],
+    };
+  }
+  if (context.isPracticalLesson) {
+    return {
+      type: "practical",
+      sections: [
+        "Getting Started",
+        "Implementation",
+        "Debugging",
+        "Optimization",
+      ],
+    };
+  }
+  if (context.isConceptualLesson) {
+    return {
+      type: "conceptual",
+      sections: ["Concept", "Importance", "Terminology", "Context"],
+    };
+  }
+  return {
+    type: "technical",
+    sections: ["Fundamentals", "Mechanics", "Application", "Patterns"],
+  };
+}
+
+function generateMCQStrategy(context, lessonTitle, contentStrategy) {
+  return {
+    q1Type: "concept",
+    q2Type: "application",
+    q3Type: "importance",
+    q4Type: "best_practice",
+  };
+}
+
+function buildHeading1(strategy, lessonTitle) {
+  switch (strategy.type) {
+    case "synthesis":
+      return `Bringing Together: ${lessonTitle}`;
+    case "practical":
+      return `Getting Started with ${lessonTitle}`;
+    case "conceptual":
+      return `Understanding ${lessonTitle}`;
+    default:
+      return `Introduction to ${lessonTitle}`;
+  }
+}
+
+function buildHeading2(strategy, lessonTitle) {
+  switch (strategy.type) {
+    case "synthesis":
+      return `How Concepts Connect`;
+    case "practical":
+      return `Implementation Guide`;
+    case "conceptual":
+      return `Core Principles`;
+    default:
+      return `How It Works`;
+  }
+}
+
+function buildHeading3(strategy, lessonTitle) {
+  switch (strategy.type) {
+    case "synthesis":
+      return `Recognizing Patterns`;
+    case "practical":
+      return `Common Issues & Solutions`;
+    case "conceptual":
+      return `Why It Matters`;
+    default:
+      return `When & How to Apply`;
+  }
+}
+
+function buildHeading4(strategy, lessonTitle) {
+  switch (strategy.type) {
+    case "synthesis":
+      return `Integration & Application`;
+    case "practical":
+      return `Best Practices`;
+    case "conceptual":
+      return `In Context`;
+    default:
+      return `Best Practices`;
+  }
+}
 
 module.exports.getLessonContext = getLessonContext;

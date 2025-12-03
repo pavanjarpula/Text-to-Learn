@@ -1,4 +1,4 @@
-// backend/routes/debugRoutes.js - Debug endpoints for course and lesson management
+// backend/routes/debugRoutes.js - ENHANCED WITH SAVE TESTING
 
 const express = require("express");
 const router = express.Router();
@@ -22,6 +22,10 @@ router.get("/lesson/:lessonId", async (req, res) => {
 
     const analysis = {
       title: lesson.title,
+      isSaved: lesson.isSaved,
+      savedBy: lesson.savedBy,
+      courseTitle: lesson.courseTitle,
+      moduleName: lesson.moduleName,
       objectivesCount: lesson.objectives?.length || 0,
       contentBlocksCount: lesson.content?.length || 0,
       contentBlocks: lesson.content?.map((block, idx) => ({
@@ -120,10 +124,230 @@ router.get("/lesson/:lessonId/raw", async (req, res) => {
   }
 });
 
-// ==================== NEW: COURSE DEBUGGING ====================
+// ==================== DEBUGGING SAVED ITEMS ====================
 
 /**
- * 🔧 NEW: GET /api/debug/courses
+ * 🔧 NEW: GET /api/debug/saved-lessons
+ * List all SAVED lessons in database (not module lessons)
+ */
+router.get("/saved-lessons", async (req, res) => {
+  try {
+    const savedLessons = await Lesson.find({ isSaved: true }).limit(20);
+
+    const analysis = {
+      totalSavedLessons: await Lesson.countDocuments({ isSaved: true }),
+      sampleSize: savedLessons.length,
+      samples: savedLessons.map((lesson) => ({
+        _id: lesson._id,
+        title: lesson.title,
+        savedBy: lesson.savedBy,
+        courseTitle: lesson.courseTitle,
+        moduleName: lesson.moduleName,
+        objectivesCount: lesson.objectives?.length || 0,
+        contentBlocksCount: lesson.content?.length || 0,
+        createdAt: lesson.createdAt,
+      })),
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 🔧 NEW: GET /api/debug/saved-lessons/:userId
+ * Get all SAVED lessons by specific user
+ */
+router.get("/saved-lessons/by-user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    console.log("🔍 Fetching saved lessons for user:", userId);
+
+    const savedLessons = await Lesson.find({
+      savedBy: userId,
+      isSaved: true,
+    }).sort({ createdAt: -1 });
+
+    const analysis = {
+      userId,
+      count: savedLessons.length,
+      lessons: savedLessons.map((lesson) => ({
+        _id: lesson._id,
+        title: lesson.title,
+        courseTitle: lesson.courseTitle,
+        moduleName: lesson.moduleName,
+        objectivesCount: lesson.objectives?.length || 0,
+        contentBlocksCount: lesson.content?.length || 0,
+        createdAt: lesson.createdAt,
+      })),
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 🔧 NEW: GET /api/debug/saved-courses
+ * List all SAVED courses in database
+ */
+router.get("/saved-courses", async (req, res) => {
+  try {
+    const courses = await Course.find().limit(20);
+
+    const analysis = {
+      totalSavedCourses: await Course.countDocuments(),
+      sampleSize: courses.length,
+      samples: courses.map((course) => ({
+        _id: course._id,
+        title: course.title,
+        creator: course.creator,
+        modulesCount: course.modules?.length || 0,
+        totalLessons:
+          course.modules?.reduce(
+            (sum, m) => sum + (m.lessons?.length || 0),
+            0
+          ) || 0,
+        tags: course.tags || [],
+        createdAt: course.createdAt,
+      })),
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 🔧 NEW: GET /api/debug/saved-courses/:userId
+ * Get all courses saved by specific user
+ */
+router.get("/saved-courses/by-user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    console.log("🔍 Fetching saved courses for user:", userId);
+
+    const courses = await Course.find({ creator: userId }).sort({
+      createdAt: -1,
+    });
+
+    const analysis = {
+      userId,
+      count: courses.length,
+      courses: courses.map((course) => ({
+        _id: course._id,
+        title: course.title,
+        description: course.description,
+        modulesCount: course.modules?.length || 0,
+        totalLessons:
+          course.modules?.reduce(
+            (sum, m) => sum + (m.lessons?.length || 0),
+            0
+          ) || 0,
+        tags: course.tags || [],
+        createdAt: course.createdAt,
+      })),
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 🔧 NEW: GET /api/debug/saved-lessons/:lessonId
+ * Get details of a specific saved lesson
+ */
+router.get("/saved-lesson-detail/:lessonId", async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+
+    const lesson = await Lesson.findById(lessonId);
+
+    if (!lesson) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
+    const analysis = {
+      _id: lesson._id,
+      title: lesson.title,
+      isSaved: lesson.isSaved,
+      savedBy: lesson.savedBy,
+      courseTitle: lesson.courseTitle,
+      moduleName: lesson.moduleName,
+      objectivesCount: lesson.objectives?.length || 0,
+      objectives: lesson.objectives,
+      contentBlocksCount: lesson.content?.length || 0,
+      contentBlocks: lesson.content?.map((block, idx) => ({
+        index: idx,
+        type: block.type,
+      })),
+      createdAt: lesson.createdAt,
+      updatedAt: lesson.updatedAt,
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 🔧 NEW: GET /api/debug/saved-courses/:courseId/full
+ * Get complete course structure with all nested data
+ */
+router.get("/saved-course-detail/:courseId", async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const analysis = {
+      _id: course._id,
+      title: course.title,
+      description: course.description,
+      creator: course.creator,
+      tags: course.tags,
+      modulesCount: course.modules?.length || 0,
+      modules: course.modules?.map((mod) => ({
+        title: mod.title,
+        lessonsCount: mod.lessons?.length || 0,
+        lessons: mod.lessons?.map((lesson) => ({
+          title: lesson.title,
+          objectivesCount: lesson.objectives?.length || 0,
+          contentBlocksCount: lesson.content?.length || 0,
+        })),
+      })),
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+    };
+
+    res.json(analysis);
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== COURSE DEBUGGING ====================
+
+/**
+ * GET /api/debug/courses
  * List all courses in database (admin/debug only)
  */
 router.get("/courses", async (req, res) => {
@@ -156,7 +380,7 @@ router.get("/courses", async (req, res) => {
 });
 
 /**
- * 🔧 NEW: GET /api/debug/course/:courseId/full
+ * GET /api/debug/course/:courseId/full
  * Get complete course structure with all nested data
  */
 router.get("/course/:courseId/full", async (req, res) => {
@@ -173,7 +397,7 @@ router.get("/course/:courseId/full", async (req, res) => {
       description: course.description,
       creator: course.creator,
       tags: course.tags,
-      modules: course.modules, // Full nested data
+      modules: course.modules,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
     });
@@ -184,9 +408,8 @@ router.get("/course/:courseId/full", async (req, res) => {
 });
 
 /**
- * 🔧 NEW: POST /api/debug/test-course
+ * POST /api/debug/test-course
  * Test creating a complete course with modules and lessons
- * Used to verify Course schema and data structure
  */
 router.post("/test-course", async (req, res) => {
   try {
@@ -230,42 +453,6 @@ router.post("/test-course", async (req, res) => {
               ],
               isEnriched: false,
             },
-            {
-              title: "HTML Tags and Elements",
-              objectives: ["Know common HTML tags"],
-              content: [
-                {
-                  type: "heading",
-                  text: "Common HTML Tags",
-                },
-                {
-                  type: "paragraph",
-                  text: "Tags are used to mark elements in HTML.",
-                },
-              ],
-              isEnriched: false,
-            },
-          ],
-        },
-        {
-          title: "Module 2: CSS Basics",
-          description: "Learn styling with CSS",
-          lessons: [
-            {
-              title: "CSS Introduction",
-              objectives: ["Understand CSS purpose"],
-              content: [
-                {
-                  type: "heading",
-                  text: "What is CSS?",
-                },
-                {
-                  type: "paragraph",
-                  text: "CSS is used to style HTML elements.",
-                },
-              ],
-              isEnriched: false,
-            },
           ],
         },
       ],
@@ -277,8 +464,7 @@ router.post("/test-course", async (req, res) => {
       success: true,
       message: "Test course created successfully",
       course: saved,
-      debugUrl: `/api/debug/course/${saved._id}`,
-      fullDataUrl: `/api/debug/course/${saved._id}/full`,
+      debugUrl: `/api/debug/saved-course-detail/${saved._id}`,
     });
   } catch (error) {
     console.error("Debug error:", error);
@@ -287,7 +473,7 @@ router.post("/test-course", async (req, res) => {
 });
 
 /**
- * 🔧 NEW: DELETE /api/debug/course/:courseId
+ * DELETE /api/debug/course/:courseId
  * Delete a test course (for cleanup)
  */
 router.delete("/course/:courseId", async (req, res) => {
@@ -310,23 +496,38 @@ router.delete("/course/:courseId", async (req, res) => {
 });
 
 /**
- * 🔧 NEW: GET /api/debug/health
+ * GET /api/debug/health
  * Quick health check for debug endpoints and database connection
  */
 router.get("/health", async (req, res) => {
   try {
     const coursesCount = await Course.countDocuments();
     const lessonsCount = await Lesson.countDocuments();
+    const savedLessonsCount = await Lesson.countDocuments({ isSaved: true });
+    const savedCoursesCount = await Course.countDocuments();
     const modulesCount = await Module.countDocuments();
 
     res.json({
       status: "healthy",
       database: {
-        courses: coursesCount,
-        lessons: lessonsCount,
+        total_courses: coursesCount,
+        total_lessons: lessonsCount,
+        saved_lessons: savedLessonsCount,
+        saved_courses: savedCoursesCount,
         modules: modulesCount,
       },
       endpoints: {
+        health: "GET /api/debug/health",
+
+        // Saved Items Endpoints
+        all_saved_lessons: "GET /api/debug/saved-lessons",
+        saved_lessons_by_user: "GET /api/debug/saved-lessons/by-user/:userId",
+        saved_lesson_detail: "GET /api/debug/saved-lesson-detail/:lessonId",
+        all_saved_courses: "GET /api/debug/saved-courses",
+        saved_courses_by_user: "GET /api/debug/saved-courses/by-user/:userId",
+        saved_course_detail: "GET /api/debug/saved-course-detail/:courseId",
+
+        // Other Endpoints
         allCourses: "GET /api/debug/courses",
         courseStructure: "GET /api/debug/course/:courseId",
         courseFullData: "GET /api/debug/course/:courseId/full",
@@ -334,7 +535,6 @@ router.get("/health", async (req, res) => {
         lessonRaw: "GET /api/debug/lesson/:lessonId/raw",
         testCourse: "POST /api/debug/test-course",
         deleteCourse: "DELETE /api/debug/course/:courseId",
-        health: "GET /api/debug/health",
       },
       timestamp: new Date(),
     });
@@ -346,14 +546,33 @@ router.get("/health", async (req, res) => {
 module.exports = router;
 
 // ========================================
-// 📌 IN YOUR MAIN SERVER FILE (server.js or app.js):
+// 📌 HOW TO USE DEBUG ENDPOINTS
 // ========================================
-// const debugRoutes = require("./routes/debugRoutes");
-// app.use("/api/debug", debugRoutes);
-//
-// COURSE STRUCTURE (No SavedLesson needed):
-// Course
-//   └─ modules[]
-//        └─ lessons[]
-//             └─ content[]
-// ========================================
+/*
+
+1. TEST SAVE LESSON (in browser console):
+   - Generate a course
+   - View a lesson
+   - Click "Save" button
+   - Then run: curl http://localhost:5000/api/debug/saved-lessons
+   - Should see the saved lesson
+
+2. TEST SAVE COURSE (in browser console):
+   - Generate a course
+   - Click "Save Course" button
+   - Then run: curl http://localhost:5000/api/debug/saved-courses
+   - Should see the saved course
+
+3. CHECK SPECIFIC USER'S SAVED ITEMS:
+   - curl http://localhost:5000/api/debug/saved-lessons/by-user/auth0|xxxxx
+   - curl http://localhost:5000/api/debug/saved-courses/by-user/auth0|xxxxx
+
+4. CHECK HEALTH:
+   - curl http://localhost:5000/api/debug/health
+   - Shows counts of all saved items
+
+5. GET DETAILS:
+   - curl http://localhost:5000/api/debug/saved-lesson-detail/LESSON_ID
+   - curl http://localhost:5000/api/debug/saved-course-detail/COURSE_ID
+
+*/

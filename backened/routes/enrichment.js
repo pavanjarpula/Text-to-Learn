@@ -1,4 +1,4 @@
-// backend/routes/enrichment.js - LIGHTWEIGHT VERSION
+// backend/routes/enrichment.js - COMPLETE UPDATED FILE WITH AUDIO SUPPORT
 
 const express = require("express");
 const router = express.Router();
@@ -13,6 +13,76 @@ const {
   exportModuleAsPDF,
 } = require("../services/pdfExportService");
 const Lesson = require("../models/Lesson");
+
+// 🆕 ADD THIS IMPORT FOR GOOGLE CLOUD TTS
+const textToSpeech = require("@google-cloud/text-to-speech");
+
+// 🆕 Initialize Google Cloud TTS Client
+let ttsClient = null;
+
+try {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    ttsClient = new textToSpeech.TextToSpeechClient();
+    console.log("✅ Google Cloud TTS Client initialized");
+  } else {
+    console.warn(
+      "⚠️  GOOGLE_APPLICATION_CREDENTIALS not configured. Audio generation will use fallback."
+    );
+  }
+} catch (err) {
+  console.warn("⚠️  Google Cloud TTS initialization failed:", err.message);
+}
+
+// 🆕 HELPER FUNCTION: Get default voice name for language
+function getDefaultVoiceName(language) {
+  const voices = {
+    "hi-IN": "hi-IN-Standard-A",
+    "en-US": "en-US-Standard-A",
+    "en-GB": "en-GB-Standard-A",
+    "ta-IN": "ta-IN-Standard-A",
+    "te-IN": "te-IN-Standard-A",
+    "mr-IN": "mr-IN-Standard-A",
+    "gu-IN": "gu-IN-Standard-A",
+  };
+  return voices[language] || "hi-IN-Standard-A";
+}
+
+// 🆕 HELPER FUNCTION: Generate audio using Google Cloud TTS
+async function generateAudioFromGoogleCloud(text, language = "hi-IN") {
+  try {
+    if (!ttsClient) {
+      throw new Error("Google Cloud TTS client not initialized");
+    }
+
+    console.log(`🎙️  Generating audio using Google Cloud TTS...`);
+    console.log(`📝 Text length: ${text.length} characters`);
+
+    // Limit to 5000 chars (Google Cloud limit)
+    const limitedText = text.substring(0, 5000);
+
+    const request = {
+      input: { text: limitedText },
+      voice: {
+        languageCode: language,
+        name: getDefaultVoiceName(language),
+      },
+      audioConfig: {
+        audioEncoding: "MP3",
+        pitch: 0,
+        speakingRate: 1,
+      },
+    };
+
+    const [response] = await ttsClient.synthesizeSpeech(request);
+    const audioBuffer = Buffer.from(response.audioContent, "binary");
+
+    console.log(`✅ Audio generated (${audioBuffer.length} bytes)`);
+    return audioBuffer;
+  } catch (error) {
+    console.error("🔥 Google Cloud TTS error:", error.message);
+    throw error;
+  }
+}
 
 // ============ MILESTONE 9: YouTube Video Integration ============
 
@@ -128,8 +198,8 @@ router.post("/translate-hinglish", async (req, res, next) => {
 });
 
 /**
- * POST /api/enrichment/generate-audio
- * Generate audio from Hinglish text
+ * 🆕 UPDATED: POST /api/enrichment/generate-audio
+ * Generate audio from Hinglish text using Google Cloud TTS
  */
 router.post("/generate-audio", async (req, res, next) => {
   try {
@@ -144,12 +214,28 @@ router.post("/generate-audio", async (req, res, next) => {
 
     console.log(`🎙️  API: Generating audio...`);
 
-    const audioBuffer = await generateAudio(text, language);
+    // Try Google Cloud TTS first
+    let audioBuffer = null;
+
+    if (ttsClient) {
+      try {
+        audioBuffer = await generateAudioFromGoogleCloud(text, language);
+      } catch (gcError) {
+        console.warn("Google Cloud TTS failed, falling back:", gcError.message);
+      }
+    } else {
+      console.warn(
+        "Google Cloud TTS not configured. Set GOOGLE_APPLICATION_CREDENTIALS."
+      );
+    }
 
     if (!audioBuffer) {
       return res.status(503).json({
-        message: "TTS service unavailable - try web browser TTS",
+        success: false,
+        message:
+          "Audio generation unavailable. Please configure Google Cloud TTS.",
         error: "TTS_UNAVAILABLE",
+        hint: "Set GOOGLE_APPLICATION_CREDENTIALS environment variable",
       });
     }
 
@@ -159,10 +245,69 @@ router.post("/generate-audio", async (req, res, next) => {
     });
 
     res.send(audioBuffer);
+    console.log("✅ Audio sent to client");
   } catch (error) {
     console.error("❌ Error in /generate-audio endpoint:", error);
     next(error);
   }
+});
+
+/**
+ * 🆕 NEW ENDPOINT: POST /api/enrichment/generate-hinglish-audio
+ * Generate Hinglish audio specifically
+ */
+router.post("/generate-hinglish-audio", async (req, res, next) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({
+        message: "Text is required for audio generation",
+        error: "MISSING_TEXT",
+      });
+    }
+
+    console.log(`🎙️  API: Generating Hinglish audio...`);
+
+    if (!ttsClient) {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Audio generation unavailable. Please configure Google Cloud TTS.",
+        error: "TTS_UNAVAILABLE",
+      });
+    }
+
+    const audioBuffer = await generateAudioFromGoogleCloud(text, "hi-IN");
+
+    res.set({
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": "attachment; filename=hinglish-audio.mp3",
+    });
+
+    res.send(audioBuffer);
+    console.log("✅ Hinglish audio sent to client");
+  } catch (error) {
+    console.error("❌ Error in /generate-hinglish-audio endpoint:", error);
+    next(error);
+  }
+});
+
+/**
+ * 🆕 NEW ENDPOINT: GET /api/enrichment/audio-status
+ * Check if audio generation is available
+ */
+router.get("/audio-status", (req, res) => {
+  res.json({
+    success: true,
+    audioAvailable: !!ttsClient,
+    message: ttsClient
+      ? "✅ Audio generation is configured and ready"
+      : "❌ Audio generation not configured",
+    hint: ttsClient
+      ? "Google Cloud TTS is active"
+      : "Set GOOGLE_APPLICATION_CREDENTIALS environment variable",
+  });
 });
 
 /**

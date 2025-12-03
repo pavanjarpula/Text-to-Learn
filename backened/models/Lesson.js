@@ -1,71 +1,6 @@
-// backend/models/Lesson.js - FIXED MODEL
+// backend/models/Lesson.js - UPDATED
 
 const mongoose = require("mongoose");
-
-// Content block schema - flexible to support all block types
-const contentBlockSchema = new mongoose.Schema(
-  {
-    type: {
-      type: String,
-      enum: ["heading", "paragraph", "code", "video", "mcq"],
-      required: true,
-    },
-    // Heading fields
-    text: {
-      type: String,
-      default: "",
-    },
-    level: {
-      type: Number,
-      default: 1,
-    },
-    // Paragraph fields
-    // (uses 'text' field above)
-
-    // Code block fields
-    language: {
-      type: String,
-      default: "javascript",
-    },
-    code: {
-      type: String,
-      default: "",
-    },
-
-    // Video block fields
-    query: {
-      type: String,
-      default: "",
-    },
-    videoId: {
-      type: String,
-      default: "",
-    },
-    videoUrl: {
-      type: String,
-      default: "",
-    },
-
-    // MCQ block fields
-    question: {
-      type: String,
-      default: "",
-    },
-    options: {
-      type: [String],
-      default: [],
-    },
-    answer: {
-      type: Number,
-      default: 0,
-    },
-    explanation: {
-      type: String,
-      default: "",
-    },
-  },
-  { _id: false } // Don't create separate IDs for content blocks
-);
 
 const lessonSchema = new mongoose.Schema(
   {
@@ -78,16 +13,18 @@ const lessonSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    // 🔧 FIXED: Make sure content is properly defined
+    // 🔧 FIXED: Content can be array of mixed types
     content: {
-      type: [contentBlockSchema],
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
       required: false,
     },
+    // Module reference (for lessons inside a course)
     module: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Module",
-      required: true,
+      required: false, // 🔧 NOT required for saved lessons
+      default: null,
     },
     order: {
       type: Number,
@@ -96,6 +33,29 @@ const lessonSchema = new mongoose.Schema(
     isEnriched: {
       type: Boolean,
       default: false,
+    },
+
+    // 🔧 NEW: For saved lessons
+    savedBy: {
+      type: String, // Auth0 user ID
+      default: null,
+      index: true, // Index for faster queries
+    },
+
+    isSaved: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Store context about where lesson came from
+    courseTitle: {
+      type: String,
+      default: null,
+    },
+
+    moduleName: {
+      type: String,
+      default: null,
     },
   },
   {
@@ -107,8 +67,10 @@ const lessonSchema = new mongoose.Schema(
 lessonSchema.pre("save", function (next) {
   console.log("💾 Lesson being saved:", {
     title: this.title,
+    module: this.module ? "in course module" : "saved lesson (no module)",
     contentBlocksCount: this.content?.length || 0,
     objectives: this.objectives?.length || 0,
+    isSaved: this.isSaved,
   });
 
   if (this.content && this.content.length > 0) {
@@ -137,6 +99,7 @@ lessonSchema.post("findOne", function (doc) {
     console.log("📖 Lesson loaded from DB:", {
       title: doc.title,
       contentBlocksCount: doc.content?.length || 0,
+      isSaved: doc.isSaved,
     });
   }
 });

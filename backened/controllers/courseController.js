@@ -1,13 +1,106 @@
-// backend/controllers/courseController.js - UPDATED WITH FIXES
+// backend/controllers/courseController.js - UPDATED WITH SAVE FIX
 
 const Course = require("../models/course");
 const Module = require("../models/Module");
 const Lesson = require("../models/Lesson");
 const User = require("../models/user");
-const { validateLesson, sanitizeLesson } = require("../services/validator");
 
 /**
- * Create a new course with optional modules & lessons
+ * 🔧 NEW: Save a complete course (POST /api/courses)
+ * Called when student clicks "Save Course" button
+ * Saves entire course structure with all modules and lessons
+ */
+exports.saveCourse = async (req, res, next) => {
+  try {
+    const { title, description = "", tags = [], modules = [] } = req.body;
+    const userId = req.user?.sub || req.auth?.payload?.sub;
+
+    console.log("💾 SAVE COMPLETE COURSE:", {
+      title,
+      modulesCount: modules?.length || 0,
+      userId,
+    });
+
+    if (!title) {
+      return res.status(400).json({ message: "Title required" });
+    }
+
+    // Create the course document
+    const course = await Course.create({
+      title,
+      description,
+      creator: userId,
+      tags,
+    });
+
+    console.log("📝 Course created:", course._id);
+
+    // Create modules and lessons if provided
+    if (modules && modules.length > 0) {
+      for (const [modIndex, modData] of modules.entries()) {
+        console.log(`  Creating Module ${modIndex + 1}:`, modData.title);
+
+        const mod = await Module.create({
+          title: modData.title,
+          description: modData.description || "",
+          course: course._id,
+          order: modIndex,
+        });
+
+        course.modules.push(mod._id);
+
+        // Create lessons for this module
+        if (modData.lessons && modData.lessons.length > 0) {
+          const lessons = modData.lessons.map((lessonData, lessonIndex) => ({
+            title: lessonData.title || `Lesson ${lessonIndex + 1}`,
+            objectives: lessonData.objectives || [],
+            content: lessonData.content || [],
+            module: mod._id,
+            order: lessonIndex,
+            isEnriched: lessonData.isEnriched || false,
+          }));
+
+          console.log(
+            `    Creating ${lessons.length} lessons for ${modData.title}`
+          );
+
+          const createdLessons = await Lesson.insertMany(lessons);
+          mod.lessons = createdLessons.map((l) => l._id);
+          await mod.save();
+
+          console.log(`    ✅ ${createdLessons.length} lessons created`);
+        }
+      }
+    }
+
+    await course.save();
+
+    console.log("✅ Course saved successfully:", {
+      courseId: course._id,
+      title: course.title,
+      modulesCount: course.modules.length,
+    });
+
+    res.status(201).json({
+      _id: course._id,
+      title: course.title,
+      description: course.description,
+      creator: course.creator,
+      tags: course.tags,
+      modules: course.modules,
+      createdAt: course.createdAt,
+    });
+  } catch (err) {
+    console.error("❌ Error saving course:", err);
+    res.status(500).json({
+      message: "Failed to save course",
+      error: err.message,
+    });
+  }
+};
+
+/**
+ * Create a new course with optional modules & lessons (legacy)
  */
 exports.createCourse = async (req, res, next) => {
   try {
@@ -62,8 +155,7 @@ exports.createCourse = async (req, res, next) => {
 };
 
 /**
- * Get a single course with fully populated modules and lessons (including content)
- * 🔧 UPDATED: Includes validation logging
+ * Get a single course with fully populated modules and lessons
  */
 exports.getCourse = async (req, res, next) => {
   try {
@@ -88,21 +180,9 @@ exports.getCourse = async (req, res, next) => {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    // 🔍 Debug: Log content structure
-    console.log("📊 Course content structure:");
-    course.modules?.forEach((mod, modIdx) => {
-      mod.lessons?.forEach((lesson, lessonIdx) => {
-        const contentStats = {
-          total: lesson.content?.length || 0,
-          mcq: lesson.content?.filter((b) => b.type === "mcq").length || 0,
-          code: lesson.content?.filter((b) => b.type === "code").length || 0,
-          video: lesson.content?.filter((b) => b.type === "video").length || 0,
-        };
-        console.log(
-          `  Module ${modIdx} → Lesson ${lessonIdx} (${lesson.title}):`,
-          contentStats
-        );
-      });
+    console.log("✅ Course retrieved:", {
+      title: course.title,
+      modulesCount: course.modules?.length || 0,
     });
 
     res.json(course);
@@ -123,7 +203,7 @@ exports.getUserCourses = async (req, res, next) => {
     console.log("📚 Fetching user courses for:", userId);
 
     const courses = await Course.find({ creator: userId })
-      .select("title description tags createdAt updatedAt")
+      .select("title description tags createdAt updatedAt modules")
       .lean();
 
     console.log(`✅ Found ${courses.length} courses`);
@@ -186,7 +266,7 @@ exports.deleteCourse = async (req, res, next) => {
 };
 
 /**
- * 🆕 LEGACY: Update a course (optional)
+ * Update a course
  */
 exports.updateCourse = async (req, res, next) => {
   try {

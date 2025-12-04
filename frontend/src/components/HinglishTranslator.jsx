@@ -8,6 +8,7 @@ import {
   Pause,
   Play,
 } from "lucide-react";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 import "./HinglishTranslator.css";
 
 const HinglishTranslator = ({ lesson = {} }) => {
@@ -15,43 +16,45 @@ const HinglishTranslator = ({ lesson = {} }) => {
   const [hinglishText, setHinglishText] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [audioLoading, setAudioLoading] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioUsingServerTTS, setAudioUsingServerTTS] = useState(false);
   const audioRef = useRef(null);
-  const [audioAvailable, setAudioAvailable] = useState(false);
+  const { speak, stop, isSupported } = useSpeechSynthesis();
 
-  // 🔧 FIX: Reset translator state when lesson changes
+  // 🔧 FIX: Reset translator state when lesson changes (WITHOUT stop dependency)
   useEffect(() => {
     console.log("📝 Lesson changed, resetting Hinglish translator");
     setExpanded(false);
     setHinglishText(null);
     setError(null);
-    setAudioAvailable(false);
     setAudioPlaying(false);
+    setAudioUsingServerTTS(false);
+    
+    // Stop audio without adding stop to dependency array
+    window.speechSynthesis?.cancel();
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
     }
-  }, [lesson?._id]); // Reset whenever lesson ID changes
+  }, [lesson?._id]); // ✅ ONLY lesson ID dependency - fixes infinite loop
 
-  // Extract text from lesson content - 🔧 FIX: Include ALL paragraphs and headings
+  // Extract text from lesson content
   const extractLessonText = () => {
     if (!lesson || !Array.isArray(lesson.content)) {
       console.warn("No lesson content available");
       return "";
     }
 
-    // Extract ALL paragraph and heading blocks (not just first 2)
     const textContent = lesson.content
       .filter((block) => ["paragraph", "heading"].includes(block.type))
       .map((block) => block.text || block.title || "")
-      .filter((text) => text.trim().length > 0); // Remove empty strings
+      .filter((text) => text.trim().length > 0);
 
     console.log(`📚 Extracted ${textContent.length} text blocks from lesson`);
 
-    // Join all text without substring limit to preserve all content
     const fullText = textContent.join("\n\n");
-    
+
     console.log(
       `📏 Total text length: ${fullText.length} characters (${textContent.length} blocks)`
     );
@@ -64,7 +67,7 @@ const HinglishTranslator = ({ lesson = {} }) => {
       setLoading(true);
       setError(null);
       setHinglishText(null);
-      setAudioAvailable(false);
+      setAudioPlaying(false);
 
       const text = extractLessonText();
       if (!text) {
@@ -113,136 +116,44 @@ const HinglishTranslator = ({ lesson = {} }) => {
     }
   };
 
-  const handleGenerateAudio = async () => {
-    try {
-      setAudioLoading(true);
-      setError(null);
-
-      if (!hinglishText) {
-        setError("Please translate to Hinglish first");
-        return;
-      }
-
-      const API_URL =
-        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-
-      console.log("🎙️  Generating audio from Hinglish text...");
-
-      const response = await fetch(
-        `${API_URL}/enrichment/generate-hinglish-audio`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: hinglishText,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
-
-      // Get audio blob
-      const audioBlob = await response.blob();
-      console.log(`✅ Audio generated (${audioBlob.size} bytes)`);
-
-      // Create object URL for audio
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Set audio source
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.play();
-        setAudioPlaying(true);
-        setAudioAvailable(true);
-      }
-
-      console.log("🎵 Audio playing...");
-    } catch (err) {
-      console.error("❌ Audio generation error:", err);
-      setError(err.message || "Failed to generate audio");
-      setAudioAvailable(false);
-    } finally {
-      setAudioLoading(false);
+  // 🆕 NEW: Play using Browser Web Speech API (PRIMARY)
+  const handlePlayBrowserAudio = () => {
+    if (!hinglishText) {
+      setError("Please translate to Hinglish first");
+      return;
     }
-  };
 
-  const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (audioPlaying) {
-        audioRef.current.pause();
-        setAudioPlaying(false);
+    if (!isSupported()) {
+      setError(
+        "⚠️  Web Speech API not supported in your browser. Please use Chrome, Firefox, Safari, or Edge."
+      );
+      return;
+    }
+
+    if (audioPlaying) {
+      stop();
+      setAudioPlaying(false);
+      setAudioUsingServerTTS(false);
+    } else {
+      console.log("🎤 Playing with Browser Web Speech API...");
+      const success = speak(hinglishText, "hi-IN");
+      if (success) {
+        setAudioPlaying(true);
+        setAudioUsingServerTTS(false);
       } else {
-        audioRef.current.play();
-        setAudioPlaying(true);
+        setError("Failed to play audio");
       }
-    }
-  };
-
-  const handleDownloadAudio = async () => {
-    try {
-      if (!hinglishText) {
-        setError("Please translate to Hinglish first");
-        return;
-      }
-
-      setAudioLoading(true);
-      setError(null);
-
-      const API_URL =
-        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-
-      console.log("📥 Downloading audio...");
-
-      const response = await fetch(
-        `${API_URL}/enrichment/generate-hinglish-audio`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: hinglishText,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to generate audio for download");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${lesson.title || "lesson"}-hinglish-audio.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      console.log("✅ Audio downloaded");
-    } catch (err) {
-      console.error("❌ Download error:", err);
-      setError(err.message || "Failed to download audio");
-    } finally {
-      setAudioLoading(false);
     }
   };
 
   const handleAudioEnded = () => {
     setAudioPlaying(false);
+    setAudioUsingServerTTS(false);
   };
 
   return (
     <div className="hinglish-translator-container">
-      {/* Hidden audio element */}
+      {/* Hidden audio element for server TTS */}
       <audio
         ref={audioRef}
         onEnded={handleAudioEnded}
@@ -252,7 +163,10 @@ const HinglishTranslator = ({ lesson = {} }) => {
 
       {/* Toggle Button */}
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          console.log("🔘 Toggle button clicked! Current expanded:", expanded);
+          setExpanded(!expanded);
+        }}
         className="hinglish-toggle-button"
         title="Expand Hinglish translation"
       >
@@ -310,72 +224,25 @@ const HinglishTranslator = ({ lesson = {} }) => {
 
               {/* Audio Controls */}
               <div className="hinglish-audio-controls">
+                {/* PRIMARY: Browser Web Speech API Button - ONLY THIS */}
                 <button
-                  onClick={handleGenerateAudio}
-                  disabled={audioLoading}
-                  className={`hinglish-audio-button ${
-                    audioAvailable ? "active" : ""
+                  onClick={handlePlayBrowserAudio}
+                  className={`hinglish-audio-button browser-tts ${
+                    audioPlaying && !audioUsingServerTTS ? "active" : ""
                   }`}
-                  title={audioAvailable ? "Generate audio" : "Generate audio"}
+                  title="Play using browser voice (instant, no server needed)"
                 >
-                  {audioLoading ? (
+                  {audioPlaying && !audioUsingServerTTS ? (
                     <>
-                      <Loader size={16} className="icon-spin" />
-                      <span>Generating...</span>
-                    </>
-                  ) : audioAvailable ? (
-                    <>
-                      {audioPlaying ? (
-                        <>
-                          <Pause size={16} />
-                          <span>Pause Audio</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play size={16} />
-                          <span>Play Audio</span>
-                        </>
-                      )}
+                      <Pause size={16} />
+                      <span>Pause Audio</span>
                     </>
                   ) : (
                     <>
                       <Volume2 size={16} />
-                      <span>Generate Audio</span>
+                      <span>🎙️ Play Audio</span>
                     </>
                   )}
-                </button>
-
-                {/* Play/Pause Button (shown when audio is available) */}
-                {audioAvailable && (
-                  <button
-                    onClick={handlePlayPause}
-                    disabled={audioLoading}
-                    className="hinglish-audio-button play-pause-btn"
-                    title={audioPlaying ? "Pause" : "Play"}
-                  >
-                    {audioPlaying ? (
-                      <>
-                        <Pause size={16} />
-                        <span>Pause</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play size={16} />
-                        <span>Play</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* Download Button */}
-                <button
-                  onClick={handleDownloadAudio}
-                  disabled={audioLoading}
-                  className="hinglish-audio-button download-btn"
-                  title="Download audio as MP3"
-                >
-                  <Download size={16} />
-                  <span>Download MP3</span>
                 </button>
               </div>
 
@@ -383,8 +250,9 @@ const HinglishTranslator = ({ lesson = {} }) => {
               <button
                 onClick={() => {
                   setHinglishText(null);
-                  setAudioAvailable(false);
                   setAudioPlaying(false);
+                  setAudioUsingServerTTS(false);
+                  window.speechSynthesis?.cancel();
                   if (audioRef.current) {
                     audioRef.current.pause();
                     audioRef.current.src = "";
@@ -392,7 +260,7 @@ const HinglishTranslator = ({ lesson = {} }) => {
                 }}
                 className="hinglish-reset-button"
               >
-                🔄 New Translation
+                🔄 Translate Another
               </button>
             </div>
           )}

@@ -1,6 +1,4 @@
-
-/* src/components/HinglishTranslator.css */
-/* Updated to match LessonRenderer dark theme */
+/* src/components/HinglishTranslator.css - WORKING VERSION */
 
 :root {
   --primary: #06b6d4;
@@ -21,7 +19,7 @@
 
 .hinglish-translator-container {
   margin: 2rem 0;
-  border-radius: 9px;
+  border-radius: 8px;
   overflow: hidden;
   background: rgba(6, 182, 212, 0.08);
   border: 1px solid rgba(6, 182, 212, 0.2);
@@ -40,7 +38,7 @@
   }
 }
 
-/* Toggle Button */
+/* ========== TOGGLE BUTTON ========== */
 .hinglish-toggle-button {
   width: 100%;
   padding: 1.2rem 1.5rem;
@@ -89,29 +87,35 @@
   transform: rotate(180deg);
 }
 
-/* Content Area */
+/* ========== CONTENT AREA ========== */
 .hinglish-content {
+  display: flex !important;
+  flex-direction: column;
+  gap: 1.2rem;
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(6, 182, 212, 0.1);
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
+  border-radius: 0 0 8px 8px;
   animation: slideDown 0.3s ease-out;
+  max-height: none !important;
+  overflow: visible !important;
+  visibility: visible !important;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
     max-height: 0;
+    overflow: hidden;
   }
   to {
     opacity: 1;
     max-height: 1000px;
+    overflow: visible;
   }
 }
 
-/* Action Buttons */
+/* ========== ACTION BUTTONS ========== */
 .hinglish-action-button,
 .hinglish-audio-button,
 .hinglish-reset-button {
@@ -161,7 +165,7 @@
   }
 }
 
-/* Error Message */
+/* ========== ERROR MESSAGE ========== */
 .hinglish-error-message {
   display: flex;
   align-items: flex-start;
@@ -183,8 +187,7 @@
 }
 
 @keyframes shake {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateX(0);
   }
   25% {
@@ -195,7 +198,7 @@
   }
 }
 
-/* Text Box */
+/* ========== TEXT BOX ========== */
 .hinglish-text-box {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(6, 182, 212, 0.2);
@@ -237,7 +240,7 @@
   margin-bottom: 0;
 }
 
-/* Scrollbar Styling */
+/* Scrollbar */
 .hinglish-text-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -256,7 +259,7 @@
   background: rgba(6, 182, 212, 0.5);
 }
 
-/* Audio Controls */
+/* ========== AUDIO CONTROLS ========== */
 .hinglish-audio-controls {
   display: flex;
   gap: 0.8rem;
@@ -289,19 +292,41 @@
   border-color: var(--primary);
 }
 
-.download-btn {
+.hinglish-audio-button.browser-tts {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.hinglish-audio-button.browser-tts:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: var(--success);
+}
+
+.hinglish-audio-button.server-tts {
   background: rgba(168, 85, 247, 0.15);
   color: var(--secondary);
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.hinglish-audio-button.server-tts:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: var(--secondary);
+}
+
+.download-btn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .download-btn:hover:not(:disabled) {
-  background: rgba(168, 85, 247, 0.25);
-  border-color: var(--secondary);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+  background: rgba(245, 158, 11, 0.25);
+  border-color: var(--warning);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
-/* Reset Button */
+/* ========== RESET BUTTON ========== */
 .hinglish-reset-button {
   background: transparent;
   border: 1px solid rgba(6, 182, 212, 0.3);
@@ -314,7 +339,7 @@
   border-color: var(--primary);
 }
 
-/* Responsive Design */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .hinglish-toggle-button {
     padding: 1rem 1.2rem;
@@ -388,14 +413,14 @@
   }
 }
 
-/* Print Styles */
+/* Print */
 @media print {
   .hinglish-translator-container {
     display: none;
   }
 }
 
-/* Dark Mode Support */
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   .hinglish-translator-container {
     background: rgba(6, 182, 212, 0.08);
@@ -408,7 +433,7 @@
   }
 }
 
-/* Reduced Motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

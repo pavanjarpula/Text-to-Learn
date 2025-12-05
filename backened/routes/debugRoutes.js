@@ -1,10 +1,10 @@
-// backend/routes/debugRoutes.js - ENHANCED WITH SAVE TESTING
+// backend/routes/debugRoutes.js - FIXED WITH CORRECT IMPORTS
 
 const express = require("express");
 const router = express.Router();
-const Lesson = require("../models/Lesson");
-const Course = require("../models/course");
-const Module = require("../models/Module");
+const Lesson = require("../models/Lesson"); // ✅ Capital L
+const Course = require("../models/Course"); // ✅ Capital C
+const Module = require("../models/Module"); // ✅ Capital M
 
 // ==================== EXISTING ENDPOINTS ====================
 
@@ -544,35 +544,3 @@ router.get("/health", async (req, res) => {
 });
 
 module.exports = router;
-
-// ========================================
-// 📌 HOW TO USE DEBUG ENDPOINTS
-// ========================================
-/*
-
-1. TEST SAVE LESSON (in browser console):
-   - Generate a course
-   - View a lesson
-   - Click "Save" button
-   - Then run: curl http://localhost:5000/api/debug/saved-lessons
-   - Should see the saved lesson
-
-2. TEST SAVE COURSE (in browser console):
-   - Generate a course
-   - Click "Save Course" button
-   - Then run: curl http://localhost:5000/api/debug/saved-courses
-   - Should see the saved course
-
-3. CHECK SPECIFIC USER'S SAVED ITEMS:
-   - curl http://localhost:5000/api/debug/saved-lessons/by-user/auth0|xxxxx
-   - curl http://localhost:5000/api/debug/saved-courses/by-user/auth0|xxxxx
-
-4. CHECK HEALTH:
-   - curl http://localhost:5000/api/debug/health
-   - Shows counts of all saved items
-
-5. GET DETAILS:
-   - curl http://localhost:5000/api/debug/saved-lesson-detail/LESSON_ID
-   - curl http://localhost:5000/api/debug/saved-course-detail/COURSE_ID
-
-*/

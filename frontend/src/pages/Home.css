@@ -476,3 +476,562 @@
     padding: 2rem 1rem;
   }
 }
+
+/* Add this to your existing Home.css file */
+
+/* ========== CLOSE PROFILE LESSON BUTTON ========== */
+.close-profile-lesson-btn {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.close-profile-lesson-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.2);
+}
+
+.close-profile-lesson-btn:active {
+  transform: translateY(0);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+  .close-profile-lesson-btn {
+    top: 90px;
+    right: 1rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .close-profile-lesson-btn {
+    top: 85px;
+    right: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ========== GLOBAL NOTIFICATIONS ========== */
+.global-notification {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  max-width: 500px;
+  width: 90%;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.global-notification.notification-error {
+  background: rgba(239, 68, 68, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.global-notification.notification-success {
+  background: rgba(16, 185, 129, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #d1fae5;
+}
+
+.global-notification.notification-info {
+  background: rgba(59, 130, 246, 0.95);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #dbeafe;
+}
+
+.global-notification.notification-warning {
+  background: rgba(245, 158, 11, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fef3c7;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ========== HOME NOTIFICATIONS ========== */
+.home-notification {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  max-width: 500px;
+  width: 90%;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.home-notification.home-notification-error {
+  background: rgba(239, 68, 68, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.home-notification.home-notification-success {
+  background: rgba(16, 185, 129, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #d1fae5;
+}
+
+.home-notification.home-notification-info {
+  background: rgba(59, 130, 246, 0.95);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #dbeafe;
+}
+
+.home-notification.home-notification-warning {
+  background: rgba(245, 158, 11, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fef3c7;
+}
+
+/* ========== CLOSE PROFILE LESSON BUTTON - FIXED ========== */
+.close-profile-lesson-btn {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  z-index: 36;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(239, 68, 68, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 8px;
+  color: #fecaca;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.close-profile-lesson-btn:hover {
+  background: rgba(239, 68, 68, 1);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.close-profile-lesson-btn:active {
+  transform: translateY(0);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ========== RESPONSIVE - TABLET ========== */
+@media (max-width: 768px) {
+  .close-profile-lesson-btn {
+    top: 90px;
+    right: 1rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem;
+  }
+
+  .global-notification,
+  .home-notification {
+    width: 85%;
+    padding: 0.75rem 1rem;
+  }
+
+  .notification-content {
+    font-size: 0.85rem;
+    gap: 0.5rem;
+  }
+}
+
+/* ========== RESPONSIVE - MOBILE ========== */
+@media (max-width: 480px) {
+  .close-profile-lesson-btn {
+    top: 85px;
+    right: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0.5rem;
+  }
+
+  .global-notification,
+  .home-notification {
+    width: 90%;
+    padding: 0.6rem 0.9rem;
+    top: 80px;
+  }
+
+  .notification-content {
+    font-size: 0.8rem;
+  }
+
+  .notification-content svg {
+    min-width: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ========== PROFILE LESSON LOCK OVERLAY ========== */
+.profile-lesson-lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 34;
+  pointer-events: none;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ========== PROFILE LESSON LOCK INDICATOR ========== */
+.profile-lesson-lock-indicator {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 37;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(239, 68, 68, 0.95);
+  border: 2px solid rgba(239, 68, 68, 1);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.profile-lesson-lock-indicator svg {
+  min-width: 18px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* ========== CLOSE PROFILE LESSON BUTTON - ENHANCED ========== */
+.close-profile-lesson-btn {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  z-index: 36;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.close-profile-lesson-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.2);
+}
+
+.close-profile-lesson-btn:active {
+  transform: translateY(0);
+}
+
+/* When button is active (showing) */
+.close-profile-lesson-btn.close-btn-active {
+  background: rgba(239, 68, 68, 0.95);
+  border: 2px solid rgba(239, 68, 68, 1);
+  color: white;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  animation: slideInRight 0.3s ease-out, pulse-button 2s ease-in-out infinite;
+}
+
+.close-profile-lesson-btn.close-btn-active:hover {
+  background: rgba(239, 68, 68, 1);
+  color: #fecaca;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes pulse-button {
+  0%, 100% {
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.6);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ========== DISABLED BUTTONS DURING LOCK ========== */
+.new-course-action-btn:disabled,
+.save-course-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.new-course-action-btn:disabled:hover,
+.save-course-btn:disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: none;
+}
+
+/* ========== CLOSE PROFILE LESSON BUTTON - SIMPLE ========== */
+.close-profile-lesson-btn {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  z-index: 36;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.close-profile-lesson-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.close-profile-lesson-btn:active {
+  transform: translateY(0);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ========== DISABLED BUTTONS DURING PROFILE LESSON ========== */
+.new-course-action-btn:disabled,
+.save-course-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.new-course-action-btn:disabled:hover,
+.save-course-btn:disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: none;
+}
+
+/* ========== RESPONSIVE - TABLET ========== */
+@media (max-width: 768px) {
+  .close-profile-lesson-btn {
+    top: 90px;
+    right: 1rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem;
+  }
+}
+
+/* ========== RESPONSIVE - MOBILE ========== */
+@media (max-width: 480px) {
+  .close-profile-lesson-btn {
+    top: 85px;
+    right: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .close-profile-lesson-btn span {
+    display: none;
+  }
+
+  .close-profile-lesson-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0.5rem;
+  }
+}

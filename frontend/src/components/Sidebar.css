@@ -444,3 +444,14 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+.lesson-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.lesson-item:disabled:hover {
+  background: none;
+  color: var(--text-muted);
+}

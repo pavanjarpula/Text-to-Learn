@@ -1,4 +1,4 @@
-/* ========== ROOT VARIABLES (Match home.css) ========== */
+/* ========== ROOT VARIABLES ========== */
 :root {
   --color-dark-bg: #0f172a;
   --color-light-bg: #1e293b;
@@ -15,10 +15,6 @@
   --color-blue-dark: #1e40af;
   --gradient-primary: linear-gradient(135deg, var(--color-teal) 0%, var(--color-purple) 100%);
   --gradient-accent: linear-gradient(135deg, var(--color-purple-light) 0%, var(--color-pink) 100%);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 /* ========== PDF EXPORTER CONTAINER ========== */
@@ -65,6 +61,7 @@
   color: var(--color-teal);
   border-color: var(--color-teal);
   transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(6, 182, 212, 0.25);
 }
 
 .pdf-export-button:active:not(:disabled) {
@@ -79,25 +76,28 @@
 .pdf-export-button svg {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
 }
 
 /* ========== BUTTON STATES ========== */
 
 /* Loading State */
 .pdf-export-button.loading {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(6, 182, 212, 0.3);
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: var(--color-teal-light);
 }
 
 .pdf-export-button.loading:hover {
   transform: translateY(-2px);
+  background: rgba(6, 182, 212, 0.15);
 }
 
 /* Success State */
 .pdf-export-button.success {
   background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.3);
-  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
   animation: successPulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -116,16 +116,13 @@
 /* Error State */
 .pdf-export-button.error {
   background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.4);
   color: #fca5a5;
-  box-shadow: none;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
 }
 
 .pdf-export-button.error:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-}
-
-.pdf-export-button.error:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
 }
 
@@ -162,6 +159,7 @@
 .pdf-export-error {
   padding: 14px 16px;
   background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-left: 4px solid #ef4444;
   border-radius: 8px;
   color: #fca5a5;
@@ -169,13 +167,21 @@
   line-height: 1.6;
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(4px);
+  margin-top: 12px;
+}
+
+.pdf-export-error strong {
+  display: block;
+  color: #f87171;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .pdf-export-error p {
   margin: 8px 0 0 0;
   font-size: 12px;
   color: #fecaca;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 @keyframes slideIn {
@@ -193,6 +199,7 @@
 .pdf-export-success {
   padding: 14px 16px;
   background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-left: 4px solid #10b981;
   border-radius: 8px;
   color: #86efac;
@@ -200,37 +207,34 @@
   line-height: 1.6;
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(4px);
+  margin-top: 12px;
+}
+
+.pdf-export-success strong {
+  display: block;
+  color: #6ee7b7;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .pdf-export-success p {
   margin: 8px 0 0 0;
   font-size: 12px;
   color: #bbf7d0;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 /* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 768px) {
   .pdf-export-button {
-    padding: 0.65rem 0.9rem;
+    padding: 0.6rem 0.85rem;
     font-size: 0.75rem;
+    gap: 0.3rem;
   }
 
   .pdf-export-button svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .pdf-export-button {
-    padding: 0.65rem 0.9rem;
-    font-size: 0.75rem;
-  }
-
-  .pdf-export-button svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
   .pdf-export-error,
@@ -240,289 +244,134 @@
   }
 }
 
-/* ========== PRINT STYLES FOR PDF EXPORT ========== */
-@media print {
-  @page {
-    size: A4;
-    margin: 20mm;
-    orphans: 3;
-    widows: 3;
+@media (max-width: 480px) {
+  .pdf-export-button {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
   }
 
-  body {
-    background: white !important;
-    color: #1a1a1a !important;
-    margin: 0;
-    padding: 0;
+  .pdf-export-button svg {
+    width: 14px;
+    height: 14px;
   }
 
-  /* ========== HEADER STYLING ========== */
-  .pdf-header {
-    page-break-after: avoid;
-    border-bottom: 3px solid #007bff;
-    padding-bottom: 20px;
-    margin-bottom: 30px;
-  }
-
-  .pdf-header h1 {
-    color: #007bff;
-    font-size: 28px;
-    margin: 0 0 10px 0;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    line-height: 1.2;
-  }
-
-  .pdf-header-meta {
-    color: #666;
-    font-size: 12px;
-    line-height: 1.8;
-  }
-
-  .pdf-header-meta p {
-    margin: 4px 0;
-  }
-
-  /* ========== OBJECTIVES SECTION ========== */
-  .pdf-objectives {
-    page-break-after: avoid;
-    background: #f5f7fa;
-    border-left: 4px solid #2196f3;
-    padding: 15px;
-    margin: 20px 0;
-    border-radius: 4px;
-  }
-
-  .pdf-objectives h3 {
-    color: #1565c0;
-    margin-top: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .pdf-objectives ul {
-    margin: 10px 0;
-    padding-left: 20px;
-  }
-
-  .pdf-objectives li {
-    margin: 6px 0;
-    color: #333;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-
-  /* ========== CONTENT BLOCKS ========== */
-  .pdf-content {
-    color: #1a1a1a;
-  }
-
-  .pdf-content h1 {
-    font-size: 28px;
-    color: #007bff;
-    margin: 25px 0 12px 0;
-    font-weight: 700;
-    page-break-after: avoid;
-    line-height: 1.3;
-  }
-
-  .pdf-content h2 {
-    font-size: 22px;
-    color: #1565c0;
-    margin: 20px 0 12px 0;
-    font-weight: 600;
-    page-break-after: avoid;
-    line-height: 1.3;
-  }
-
-  .pdf-content h3 {
-    font-size: 18px;
-    color: #2196f3;
-    margin: 16px 0 10px 0;
-    font-weight: 600;
-    page-break-after: avoid;
-  }
-
-  .pdf-content p {
-    font-size: 13px;
-    line-height: 1.8;
-    color: #333;
-    margin: 12px 0;
-    text-align: justify;
-    orphans: 3;
-    widows: 3;
-  }
-
-  /* ========== CODE BLOCKS ========== */
-  .pdf-code-block {
-    background: #f5f5f5 !important;
-    border-left: 4px solid #007bff !important;
-    padding: 15px !important;
-    margin: 16px 0 !important;
-    font-family: "Courier New", monospace !important;
-    page-break-inside: avoid;
-    border-radius: 4px;
-  }
-
-  .pdf-code-block strong {
-    color: #007bff;
-    display: block;
-    margin-bottom: 10px;
-    font-size: 12px;
-  }
-
-  .pdf-code-block pre {
-    margin: 0 !important;
-    color: #333 !important;
-    font-size: 11px !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-    line-height: 1.5 !important;
-    overflow: visible !important;
-  }
-
-  /* ========== VIDEO BLOCKS ========== */
-  .pdf-video-block {
-    background: #f9f9f9 !important;
-    border: 2px dashed #ccc !important;
-    padding: 15px !important;
-    margin: 16px 0 !important;
-    border-radius: 6px;
-    page-break-inside: avoid;
-  }
-
-  .pdf-video-block p {
-    color: #666 !important;
-    margin: 0 !important;
-    font-size: 13px !important;
-    font-weight: 500;
-  }
-
-  /* ========== MCQ BLOCKS ========== */
-  .pdf-mcq-block {
-    background: #fff3e0 !important;
-    border: 2px solid #ff9800 !important;
-    padding: 16px !important;
-    margin: 16px 0 !important;
-    border-radius: 6px;
-    page-break-inside: avoid;
-  }
-
-  .pdf-mcq-block strong {
-    color: #ff9800;
-    display: block;
-    margin-bottom: 12px;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .pdf-mcq-option {
-    margin: 10px 0;
-    padding: 10px;
-    background: #fff !important;
-    border-radius: 4px;
-    color: #333;
-    font-size: 12px;
-    line-height: 1.6;
-  }
-
-  .pdf-mcq-option.correct {
-    background: #e8f5e9 !important;
-    border-left: 3px solid #4caf50 !important;
-    padding-left: 12px;
-  }
-
-  .pdf-mcq-correct-answer {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #ff9800;
-    color: #333;
+  .pdf-export-error,
+  .pdf-export-success {
     font-size: 11px;
-    font-weight: 600;
-  }
-
-  .pdf-mcq-explanation {
+    padding: 11px 13px;
     margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #ff9800;
-    color: #555;
+  }
+
+  .pdf-export-error strong,
+  .pdf-export-success strong {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .pdf-export-error p,
+  .pdf-export-success p {
     font-size: 11px;
-    font-style: italic;
-    line-height: 1.6;
-  }
-
-  /* ========== FOOTER ========== */
-  .pdf-footer {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #ddd;
-    text-align: center;
-    color: #999;
-    font-size: 10px;
-    page-break-before: avoid;
-  }
-
-  /* ========== PAGE BREAK ========== */
-  .pdf-page-break {
-    page-break-after: always;
-    margin: 0;
-  }
-
-  /* ========== PREVENT BAD BREAKS ========== */
-  h1, h2, h3 {
-    page-break-after: avoid;
-    page-break-inside: avoid;
-  }
-
-  table {
-    page-break-inside: avoid;
-  }
-
-  img {
-    page-break-inside: avoid;
-    max-width: 100%;
-  }
-
-  /* ========== LINK STYLING ========== */
-  a {
-    color: #0066cc;
-    text-decoration: none;
-  }
-
-  a[href]:after {
-    content: "";
-  }
-
-  /* ========== TEXT SELECTION ========== */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
 }
 
 /* ========== DARK MODE SUPPORT ========== */
 @media (prefers-color-scheme: dark) {
-  .pdf-exporter-container {
-    /* Uses CSS variables defined at root */
+  .pdf-export-button {
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.15);
   }
 
-  .pdf-export-button {
-    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.25);
+  .pdf-export-button:hover:not(:disabled) {
+    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.25);
   }
 
   .pdf-export-error {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.08);
+    backdrop-filter: blur(8px);
   }
 
   .pdf-export-success {
-    background: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.08);
+    backdrop-filter: blur(8px);
   }
 }
 
 /* ========== LIGHT MODE SUPPORT ========== */
 @media (prefers-color-scheme: light) {
   .pdf-export-button {
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+    background: rgba(6, 182, 212, 0.05);
+    border-color: rgba(6, 182, 212, 0.2);
+    color: #0891b2;
+  }
+
+  .pdf-export-button:hover:not(:disabled) {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: #06b6d4;
+    color: #0891b2;
+  }
+
+  .pdf-export-error {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+  }
+
+  .pdf-export-error strong {
+    color: #b91c1c;
+  }
+
+  .pdf-export-success {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.2);
+    color: #059669;
+  }
+
+  .pdf-export-success strong {
+    color: #047857;
+  }
+}
+
+/* ========== ACCESSIBILITY ========== */
+.pdf-export-button:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+.pdf-export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ========== TRANSITIONS FOR SMOOTH UX ========== */
+.pdf-export-button,
+.pdf-export-error,
+.pdf-export-success {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* ========== HIGH CONTRAST MODE ========== */
+@media (prefers-contrast: more) {
+  .pdf-export-button {
+    border-width: 2px;
+  }
+
+  .pdf-export-error,
+  .pdf-export-success {
+    border-width: 2px;
+  }
+}
+
+/* ========== REDUCED MOTION ========== */
+@media (prefers-reduced-motion: reduce) {
+  .pdf-export-button::before,
+  .pdf-export-button,
+  .pdf-export-error,
+  .pdf-export-success,
+  .icon-spin,
+  .icon-check {
+    animation: none !important;
+    transition: none !important;
   }
 }

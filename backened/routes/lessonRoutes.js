@@ -5,8 +5,8 @@ const {
   addLesson,
   getLesson,
   deleteLesson,
-  saveLesson, // 🔧 NEW
-  getUserSavedLessons, // 🔧 NEW
+  saveLesson,
+  getUserSavedLessons,
 } = require("../controllers/lessonController");
 const checkJwt = require("../middlewares/authMiddleware");
 const attachUser = require("../middlewares/attachUser");
@@ -14,24 +14,33 @@ const attachUser = require("../middlewares/attachUser");
 const router = express.Router();
 
 /**
- * 🔧 CRITICAL: SPECIFIC ROUTES BEFORE GENERIC :lessonId ROUTES
+ * 🔧 CRITICAL: SPECIFIC ROUTES BEFORE GENERIC :id ROUTES
+ * Order matters! More specific paths must come before generic patterns
  */
 
-// 🟢 Save lesson (protected)
+// 🟢 SAVE LESSON: POST /api/lessons/save
+// Save a lesson from course to user's collection
 router.post("/save", checkJwt, attachUser, saveLesson);
 
-// 🟢 Get user's saved lessons (protected)
+// 🟢 GET USER'S SAVED LESSONS: GET /api/lessons/user/saved
+// Fetch all lessons saved by current user
 router.get("/user/saved", checkJwt, attachUser, getUserSavedLessons);
 
 /**
- * Generic :lessonId routes AFTER specific routes
+ * Generic :id routes AFTER specific routes
+ * These handle both course lessons and saved lessons
  */
 
-// 🟢 Protected routes
-router.post("/:moduleId", checkJwt, attachUser, addLesson); // Add lesson to a module
-router.delete("/:lessonId", checkJwt, attachUser, deleteLesson); // Delete lesson
+// 🟢 ADD LESSON TO MODULE: POST /api/lessons/:moduleId
+// Add a lesson to a module (for building courses)
+router.post("/:moduleId", checkJwt, attachUser, addLesson);
 
-// 🔓 Public route
-router.get("/:lessonId", getLesson); // Get lesson details
+// 🟢 DELETE LESSON: DELETE /api/lessons/:lessonId
+// Delete a lesson (checks ownership if saved)
+router.delete("/:lessonId", checkJwt, attachUser, deleteLesson);
+
+// 🔓 GET LESSON: GET /api/lessons/:lessonId
+// Get lesson by ID (public, but can be saved or course lesson)
+router.get("/:lessonId", getLesson);
 
 module.exports = router;

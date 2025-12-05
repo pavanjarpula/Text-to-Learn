@@ -285,6 +285,7 @@ export const getLessonById = async (lessonId) => {
  * 🔧 FIXED: Save a lesson to user's saved lessons
  * This saves a lesson from a course to the user's collection
  * Endpoint: POST /api/lessons/save
+ * Body should contain: title, objectives, content, courseTitle, moduleName
  */
 export const saveLessonWithContext = async (
   lesson,
@@ -296,17 +297,22 @@ export const saveLessonWithContext = async (
   if (!lesson) throw new Error("Lesson object is required");
 
   try {
-    console.log("💾 Saving lesson with context:", lesson.title);
-
-    const lessonData = {
+    console.log("💾 Saving lesson with context:", {
       title: lesson.title,
+      course: courseTitle,
+      module: moduleName,
+    });
+
+    // 🔧 CRITICAL: Use the exact endpoint and format expected by backend
+    const lessonData = {
+      title: lesson.title || "Untitled Lesson",
       objectives: lesson.objectives || [],
       content: lesson.content || [],
-      courseTitle: courseTitle,
-      moduleName: moduleName,
+      courseTitle: courseTitle || "Untitled Course",
+      moduleName: moduleName || "Untitled Module",
     };
 
-    // Use /lessons/save endpoint specifically for saving lessons
+    // POST to /lessons/save endpoint (protected, requires token)
     const result = await apiRequest("/lessons/save", "POST", lessonData, token);
 
     console.log("✅ Lesson saved successfully:", result._id);
@@ -320,14 +326,18 @@ export const saveLessonWithContext = async (
 /**
  * 🔧 FIXED: Get user's saved lessons
  * GET /api/lessons/user/saved
+ * Returns array of lessons saved by current user
  */
 export const getUserSavedLessons = async (token) => {
   if (!token) throw new Error("Authentication required");
   try {
     console.log("📚 Fetching saved lessons...");
     const result = await apiRequest("/lessons/user/saved", "GET", null, token);
-    console.log(`✅ Fetched ${result.length} saved lessons`);
-    return result;
+
+    // Handle both array and object responses
+    const lessons = Array.isArray(result) ? result : result.data || [];
+    console.log(`✅ Fetched ${lessons.length} saved lessons`);
+    return lessons;
   } catch (err) {
     console.error("Error fetching saved lessons:", err);
     // Return empty array on error to prevent breaking the page
@@ -337,16 +347,16 @@ export const getUserSavedLessons = async (token) => {
 
 /**
  * 🔧 FIXED: Delete a saved lesson
- * DELETE /api/lessons/saved/:id
+ * DELETE /api/lessons/:lessonId
  */
-export const deleteSavedLesson = async (lessonId, token) => {
+export const deleteLessonById = async (lessonId, token) => {
   if (!token) throw new Error("Authentication required");
   if (!lessonId) throw new Error("Lesson ID is required");
 
   try {
-    console.log("🗑️  Deleting saved lesson:", lessonId);
+    console.log("🗑️  Deleting lesson:", lessonId);
     const result = await apiRequest(
-      `/lessons/saved/${lessonId}`,
+      `/lessons/${lessonId}`,
       "DELETE",
       null,
       token
@@ -399,17 +409,6 @@ export const addLessonToModule = async (moduleId, lesson, token) => {
     );
   } catch (err) {
     console.error("Error adding lesson:", err);
-    throw err;
-  }
-};
-
-export const deleteLessonById = async (lessonId, token) => {
-  if (!token) throw new Error("Authentication required");
-  if (!lessonId) throw new Error("Lesson ID is required");
-  try {
-    return await apiRequest(`/lessons/${lessonId}`, "DELETE", null, token);
-  } catch (err) {
-    console.error("Error deleting lesson:", err);
     throw err;
   }
 };
@@ -470,7 +469,8 @@ export const markLessonComplete = async (lessonId, token) => {
     );
   } catch (err) {
     console.error("Error marking lesson complete:", err);
-    throw err;
+    // Don't throw - this is not critical for the user flow
+    return null;
   }
 };
 
@@ -505,9 +505,8 @@ const apiExports = {
   saveLesson,
   saveLessonWithContext,
   getUserSavedLessons,
-  deleteSavedLesson,
-  addLessonToModule,
   deleteLessonById,
+  addLessonToModule,
   updateLesson,
   getUserProfile,
   updateUserProfile,

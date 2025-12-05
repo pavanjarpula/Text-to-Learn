@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronLeft, Plus, MessageCircle, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 
 const Sidebar = ({
   courses,
   activeCourse,
   activeLesson,
+  courseSource,
+  isViewingProfileLesson,
   onSelectCourse,
   onSelectLesson,
   onDeleteCourse,
@@ -15,6 +17,23 @@ const Sidebar = ({
   const [expandedModules, setExpandedModules] = useState({});
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if on profile page
+  const isOnProfile = location.pathname === '/profile';
+
+  // AUTO-EXPAND when course source changes from profile
+  useEffect(() => {
+    if (activeCourse && courseSource === 'sidebar') {
+      setExpandedCourse(activeCourse._id);
+      console.log('🔧 Sidebar - Auto-expanding course:', activeCourse.title);
+    }
+  }, [activeCourse?._id, activeCourse?.title, courseSource]);
+
+  // Hide sidebar entirely on profile page
+  if (isOnProfile) {
+    return null;
+  }
 
   const toggleCourse = (courseId) => {
     setExpandedCourse(expandedCourse === courseId ? null : courseId);
@@ -65,6 +84,8 @@ const Sidebar = ({
                   isExpanded={expandedCourse === course._id}
                   expandedModules={expandedModules}
                   activeLesson={activeLesson}
+                  courseSource={courseSource}
+                  isViewingProfileLesson={isViewingProfileLesson}
                   onToggleCourse={() => toggleCourse(course._id)}
                   onToggleModule={toggleModule}
                   onSelectCourse={() => onSelectCourse(course)}
@@ -98,6 +119,8 @@ const CourseItem = ({
   isExpanded,
   expandedModules,
   activeLesson,
+  courseSource,
+  isViewingProfileLesson,
   onToggleCourse,
   onToggleModule,
   onSelectCourse,
@@ -131,6 +154,8 @@ const CourseItem = ({
               course={course}
               isExpanded={expandedModules[module._id]}
               activeLesson={activeLesson}
+              courseSource={courseSource}
+              isViewingProfileLesson={isViewingProfileLesson}
               onToggle={() => onToggleModule(module._id)}
               onSelectLesson={onSelectLesson}
             />
@@ -147,10 +172,12 @@ const ModuleItem = ({
   course,
   isExpanded,
   activeLesson,
+  courseSource,
+  isViewingProfileLesson,
   onToggle,
   onSelectLesson,
 }) => {
-  // 🔧 FIX: Calculate global lesson index
+  // Calculate global lesson index
   const calculateGlobalLessonIndex = (lessonId) => {
     let globalIndex = 0;
     
@@ -168,40 +195,35 @@ const ModuleItem = ({
     return 0;
   };
 
-  // 🔧 FIX: Calculate total lessons
+  // Calculate total lessons
   const getTotalLessons = () => {
     return course.modules.reduce((total, mod) => {
       return total + (mod.lessons?.length || 0);
     }, 0);
   };
 
-  const handleLessonClick = (lesson, lessonIdx) => {
+  const handleLessonClick = (lesson) => {
     console.log('\n📍 Sidebar: Lesson clicked');
     
-    // 🔧 STEP 2: Triple verification scroll
-    console.log('🔧 STEP 2: Resetting scroll to top from Sidebar');
+    // Don't navigate if viewing profile lesson
+    if (isViewingProfileLesson) {
+      console.log('⚠️ Cannot navigate while viewing profile lesson');
+      return;
+    }
     
-    // Verification 1: Immediate scroll
+    console.log('🔧 Resetting scroll to top from Sidebar');
+    
+    // Scroll reset
     window.scrollTo(0, 0);
-    const check1 = window.scrollY;
-    console.log(`   ✓ Check 1 - Immediate scroll. scrollY = ${check1}`);
-
-    // Verification 2: DOM level scroll
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-    const check2 = document.documentElement.scrollTop;
-    console.log(`   ✓ Check 2 - DOM scroll. scrollTop = ${check2}`);
 
-    // Verification 3: Delayed scroll (after render)
     setTimeout(() => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-      const check3 = window.scrollY;
-      console.log(`   ✓ Check 3 - Delayed scroll. scrollY = ${check3}`);
     }, 0);
     
-    // Now pass lesson data
     console.log('📚 Sidebar - Lesson clicked:', lesson.title);
     
     const lessonData = {
@@ -233,11 +255,12 @@ const ModuleItem = ({
           {module.lessons.map((lesson, idx) => (
             <button
               key={lesson._id}
-              onClick={() => handleLessonClick(lesson, idx)}
+              onClick={() => handleLessonClick(lesson)}
               className={`lesson-item ${
                 activeLesson?.lesson?._id === lesson._id || activeLesson?._id === lesson._id ? 'active' : ''
               }`}
               title={lesson.title}
+              disabled={isViewingProfileLesson}
             >
               <span className="lesson-number">{idx + 1}</span>
               <span className="lesson-title">{lesson.title}</span>

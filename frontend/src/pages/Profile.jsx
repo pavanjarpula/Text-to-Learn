@@ -1,7 +1,6 @@
-// src/pages/Profile.jsx - COMPLETE UPDATE
-
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import {
   getUserCourses,
   deleteCourseById,
@@ -12,17 +11,20 @@ import {
   Trash2,
   Eye,
   LogOut,
-  Settings,
   BookOpen,
   Clock,
   Zap,
   AlertCircle,
   BookmarkCheck,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 import "./Profile.css";
 
-const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
+const ProfilePage = ({ onSelectCourse, onViewProfileLesson }) => {
   const { user, isAuthenticated, logout, getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
   const [savedLessons, setSavedLessons] = useState([]);
@@ -31,7 +33,7 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
   const [deleting, setDeleting] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
-  const [showSavedLessons, setShowSavedLessons] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   // Fetch user data on mount
   useEffect(() => {
@@ -44,12 +46,10 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
       try {
         const token = await getAccessTokenSilently();
 
-        // Fetch saved courses
         console.log("📚 Profile - Fetching saved courses...");
         const coursesData = await getUserCourses(token);
         setCourses(coursesData || []);
 
-        // Fetch saved lessons
         console.log("📖 Profile - Fetching saved lessons...");
         const lessonsData = await getUserSavedLessons(token);
         setSavedLessons(lessonsData || []);
@@ -108,34 +108,81 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
     logout({ returnTo: window.location.origin });
   };
 
-  // Handle view saved course
-  const handleViewCourse = (course) => {
-    console.log("👁️ Viewing course:", course.title);
-    if (onSelectCourse && typeof onSelectCourse === "function") {
-      onSelectCourse(course);
-    }
+  // Handle Go Back to Home
+  const handleGoBack = () => {
+    console.log("📍 Going back to home/courses");
+    navigate("/");
   };
 
-  // Handle view saved lesson
+  // Handle view saved lesson - Navigate to home with special state
   const handleViewLesson = (lesson) => {
-    console.log("👁️ Viewing lesson:", lesson.title);
+    console.log("👁️ Viewing saved lesson from profile:", {
+      lessonId: lesson._id,
+      title: lesson.title,
+      course: lesson.courseTitle,
+      module: lesson.moduleName,
+    });
 
-    if (onSelectLesson && typeof onSelectLesson === "function") {
-      onSelectLesson({
-        lesson,
-        module: {
-          _id: "virtual",
-          title: lesson.moduleName || "Module",
-          lessons: [lesson],
-        },
-        course: {
-          _id: "virtual",
-          title: lesson.courseTitle || "Course",
-        },
-        moduleIdx: 0,
+    const lessonData = {
+      _id: lesson._id,
+      title: lesson.title,
+      content: lesson.content || [],
+      objectives: lesson.objectives || [],
+    };
+
+    const moduleData = {
+      title: lesson.moduleName || "Module",
+    };
+
+    const courseData = {
+      title: lesson.courseTitle || "Course",
+    };
+
+    // Call the callback to update App state
+    if (onViewProfileLesson) {
+      onViewProfileLesson({
+        lesson: lessonData,
+        module: moduleData,
+        course: courseData,
         lessonIdx: 0,
+        moduleIdx: 0,
+        totalLessons: 1,
       });
     }
+
+    // Navigate to home page
+    navigate("/", {
+      state: {
+        viewingSavedLesson: true,
+        returnPath: "/profile",
+      },
+    });
+  };
+
+  // Handle view course - Navigate to home with course data
+  const handleViewCourse = async (course) => {
+    console.log("👁️ Viewing course from profile:", course.title);
+
+    const courseDataSize = JSON.stringify(course).length;
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (courseDataSize > maxSize) {
+      setNotification({
+        type: "error",
+        message:
+          "⚠️ Unable to save due to high payload. Try saving individual lessons instead.",
+      });
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
+    // Use the onSelectCourse callback to update App state
+    if (onSelectCourse) {
+      onSelectCourse(course);
+    }
+
+    // Navigate to home page
+    navigate("/");
   };
 
   if (!isAuthenticated) {
@@ -148,7 +195,9 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
     );
   }
 
-  const totalLessons = courses.reduce(
+  // Calculate totals from combined saved lessons and courses
+  const totalSavedLessons = savedLessons.length;
+  const totalCourseLessons = courses.reduce(
     (sum, course) =>
       sum +
       (course.modules?.reduce(
@@ -157,9 +206,45 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
       ) || 0),
     0
   );
+  const combinedTotal = totalSavedLessons + totalCourseLessons;
+
+  // Group saved lessons by course for professional display
+  const groupedSavedLessons = savedLessons.reduce((acc, lesson) => {
+    const courseTitle = lesson.courseTitle || "Uncategorized";
+    if (!acc[courseTitle]) {
+      acc[courseTitle] = {
+        courseTitle,
+        modules: {},
+      };
+    }
+
+    const moduleTitle = lesson.moduleName || "Uncategorized";
+    if (!acc[courseTitle].modules[moduleTitle]) {
+      acc[courseTitle].modules[moduleTitle] = {
+        moduleName: moduleTitle,
+        lessons: [],
+      };
+    }
+
+    acc[courseTitle].modules[moduleTitle].lessons.push(lesson);
+    return acc;
+  }, {});
 
   return (
     <div className="profile-page-container">
+      {/* Notification Banner */}
+      {notification && (
+        <div className={`notification-banner notification-${notification.type}`}>
+          <span>{notification.message}</span>
+          <button
+            onClick={() => setNotification(null)}
+            className="notification-close"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Error Banner */}
       {error && (
         <div className="profile-error-banner">
@@ -173,6 +258,14 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
 
       {/* Profile Header */}
       <header className="profile-header">
+        {/* Go Back Section - Integrated into Header */}
+        <div className="profile-goback-inline">
+          <button onClick={handleGoBack} className="goback-btn" title="Go back">
+            <ArrowLeft size={18} />
+            <span>Go Back</span>
+          </button>
+        </div>
+
         <div className="profile-header-content">
           {/* Avatar Section */}
           <div className="profile-avatar-section">
@@ -200,27 +293,6 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
 
           {/* Header Actions */}
           <div className="profile-header-actions">
-            {/* Saved Lessons Toggle Button */}
-            <button
-              onClick={() => setShowSavedLessons(!showSavedLessons)}
-              className={`action-btn saved-lessons-btn ${
-                showSavedLessons ? "active" : ""
-              }`}
-              title="View saved lessons"
-            >
-              <BookmarkCheck size={18} />
-              <span>Saved Lessons ({savedLessons.length})</span>
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="action-btn settings-btn"
-              title="Settings (coming soon)"
-            >
-              <Settings size={18} />
-              <span>Settings</span>
-            </button>
-
             <button
               onClick={handleLogout}
               className="action-btn logout-btn"
@@ -232,27 +304,27 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
           </div>
         </div>
 
-        {/* Stats Bar */}
+        {/* Updated Stats Bar */}
         <div className="profile-stats">
           <div className="stat-card">
             <BookOpen size={20} />
             <div>
-              <p className="stat-label">Courses</p>
+              <p className="stat-label">Saved Courses</p>
               <p className="stat-value">{courses.length}</p>
             </div>
           </div>
           <div className="stat-card">
-            <Clock size={20} />
+            <BookmarkCheck size={20} />
             <div>
-              <p className="stat-label">Lessons</p>
-              <p className="stat-value">{totalLessons}</p>
+              <p className="stat-label">Saved Lessons</p>
+              <p className="stat-value">{totalSavedLessons}</p>
             </div>
           </div>
           <div className="stat-card">
             <Zap size={20} />
             <div>
-              <p className="stat-label">Saved</p>
-              <p className="stat-value">{savedLessons.length}</p>
+              <p className="stat-label">Total</p>
+              <p className="stat-value">{combinedTotal}</p>
             </div>
           </div>
         </div>
@@ -260,82 +332,77 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
 
       {/* Main Content */}
       <main className="profile-main">
-        {/* Saved Lessons Section */}
-        {showSavedLessons && (
-          <section className="profile-saved-lessons-section">
-            <div className="section-header">
-              <h2>
-                <BookmarkCheck size={20} />
-                Your Saved Lessons
-              </h2>
-              <span className="lesson-count">{savedLessons.length}</span>
-            </div>
-
-            {loading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Loading saved lessons...</p>
-              </div>
-            ) : savedLessons.length === 0 ? (
-              <div className="empty-state">
-                <BookmarkCheck size={48} />
-                <h3>No Saved Lessons Yet</h3>
-                <p>Save lessons from courses to access them here</p>
-              </div>
-            ) : (
-              <div className="saved-lessons-grid">
-                {savedLessons.map((lesson) => (
-                  <SavedLessonCard
-                    key={lesson._id}
-                    lesson={lesson}
-                    onView={() => handleViewLesson(lesson)}
-                    onDelete={() => {
-                      setDeleteConfirm(lesson._id);
-                      setDeleteType("lesson");
-                    }}
-                    isDeleting={deleting === lesson._id}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Saved Courses Section */}
-        <section className="profile-courses-section">
+        {/* Combined Saved Items Section */}
+        <section className="profile-combined-section">
           <div className="section-header">
             <h2>
-              <BookOpen size={20} />
-              Your Courses
+              <BookmarkCheck size={20} />
+              Your Saved Content
             </h2>
-            <span className="course-count">{courses.length}</span>
+            <span className="content-count">{combinedTotal}</span>
           </div>
 
           {loading ? (
             <div className="loading-state">
               <div className="spinner"></div>
-              <p>Loading your courses...</p>
+              <p>Loading your content...</p>
             </div>
-          ) : courses.length === 0 ? (
+          ) : combinedTotal === 0 ? (
             <div className="empty-state">
-              <BookOpen size={48} />
-              <h3>No Courses Yet</h3>
-              <p>Generate your first AI-powered course to get started</p>
+              <BookmarkCheck size={48} />
+              <h3>No Saved Content Yet</h3>
+              <p>Save courses and lessons to access them here</p>
             </div>
           ) : (
-            <div className="courses-grid">
-              {courses.map((course) => (
-                <CourseCard
-                  key={course._id}
-                  course={course}
-                  onView={() => handleViewCourse(course)}
-                  onDelete={() => {
-                    setDeleteConfirm(course._id);
-                    setDeleteType("course");
-                  }}
-                  isDeleting={deleting === course._id}
-                />
-              ))}
+            <div className="combined-content">
+              {/* Saved Lessons */}
+              {totalSavedLessons > 0 && (
+                <div className="content-subsection">
+                  <h3 className="subsection-title">
+                    📖 Saved Lessons ({totalSavedLessons})
+                  </h3>
+                  <div className="saved-courses-hierarchy">
+                    {Object.entries(groupedSavedLessons).map(
+                      ([courseTitle, courseData]) => (
+                        <SavedCourseGroup
+                          key={`lesson-${courseTitle}`}
+                          courseTitle={courseTitle}
+                          modules={courseData.modules}
+                          onViewLesson={handleViewLesson}
+                          onDeleteLesson={(lessonId) => {
+                            setDeleteConfirm(lessonId);
+                            setDeleteType("lesson");
+                          }}
+                          deleting={deleting}
+                        />
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Saved Courses */}
+              {courses.length > 0 && (
+                <div className="content-subsection">
+                  <h3 className="subsection-title">
+                    📚 Saved Courses ({courses.length})
+                  </h3>
+                  <div className="courses-grid">
+                    {courses.map((course) => (
+                      <CourseCard
+                        key={course._id}
+                        course={course}
+                        onView={() => handleViewCourse(course)}
+                        onDelete={() => {
+                          setDeleteConfirm(course._id);
+                          setDeleteType("course");
+                        }}
+                        isDeleting={deleting === course._id}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -374,9 +441,7 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
                 disabled={deleting === deleteConfirm}
                 className="modal-btn delete-btn"
               >
-                {deleting === deleteConfirm
-                  ? "Deleting..."
-                  : "Delete"}
+                {deleting === deleteConfirm ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -386,9 +451,138 @@ const ProfilePage = ({ onSelectCourse, onSelectLesson }) => {
   );
 };
 
-/**
- * Course Card Component
- */
+// Component Groups (SavedCourseGroup, SavedModuleGroup, etc.)
+const SavedCourseGroup = ({
+  courseTitle,
+  modules,
+  onViewLesson,
+  onDeleteLesson,
+  deleting,
+}) => {
+  const [expandedModules, setExpandedModules] = useState({});
+
+  const toggleModule = (moduleName) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleName]: !prev[moduleName],
+    }));
+  };
+
+  const totalLessons = Object.values(modules).reduce(
+    (sum, m) => sum + m.lessons.length,
+    0
+  );
+
+  return (
+    <div className="saved-course-group">
+      <div className="saved-course-header">
+        <div className="saved-course-info">
+          <h3 className="saved-course-title">📚 {courseTitle}</h3>
+          <p className="saved-course-stats">{totalLessons} lessons</p>
+        </div>
+      </div>
+
+      <div className="modules-hierarchy">
+        {Object.entries(modules).map(([moduleName, moduleData]) => (
+          <SavedModuleGroup
+            key={moduleName}
+            moduleName={moduleName}
+            lessons={moduleData.lessons}
+            isExpanded={expandedModules[moduleName]}
+            onToggle={() => toggleModule(moduleName)}
+            onViewLesson={onViewLesson}
+            onDeleteLesson={onDeleteLesson}
+            deleting={deleting}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SavedModuleGroup = ({
+  moduleName,
+  lessons,
+  isExpanded,
+  onToggle,
+  onViewLesson,
+  onDeleteLesson,
+  deleting,
+}) => {
+  return (
+    <div className="saved-module-group">
+      <button className="saved-module-header" onClick={onToggle}>
+        <div className="module-toggle">
+          <ChevronDown
+            size={18}
+            className={`toggle-icon ${isExpanded ? "expanded" : ""}`}
+          />
+          <span className="module-name">📖 {moduleName}</span>
+        </div>
+        <span className="module-lesson-count">{lessons.length}</span>
+      </button>
+
+      {isExpanded && (
+        <div className="lessons-list">
+          {lessons.map((lesson) => (
+            <SavedLessonItem
+              key={lesson._id}
+              lesson={lesson}
+              onView={() => onViewLesson(lesson)}
+              onDelete={() => onDeleteLesson(lesson._id)}
+              isDeleting={deleting === lesson._id}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SavedLessonItem = ({ lesson, onView, onDelete, isDeleting }) => {
+  return (
+    <div className="saved-lesson-item">
+      <div className="lesson-item-header">
+        <div className="lesson-item-info">
+          <h4 className="lesson-item-title">{lesson.title}</h4>
+          <p className="lesson-item-meta">
+            📝 {lesson.content?.length || 0} blocks • ⏰{" "}
+            {new Date(lesson.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="lesson-item-actions">
+          <button
+            onClick={onView}
+            className="lesson-item-btn view-btn"
+            title="View lesson"
+          >
+            <Eye size={16} />
+            <span>View</span>
+          </button>
+          <button
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="lesson-item-btn delete-btn"
+            title="Delete lesson"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {lesson.objectives && lesson.objectives.length > 0 && (
+        <div className="lesson-item-objectives">
+          {lesson.objectives.slice(0, 2).map((obj, idx) => (
+            <span key={idx} className="objective-tag">
+              ✓ {obj}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CourseCard = ({ course, onView, onDelete, isDeleting }) => {
   const moduleCount = course.modules?.length || 0;
   const lessonCount =
@@ -439,56 +633,6 @@ const CourseCard = ({ course, onView, onDelete, isDeleting }) => {
       <button onClick={onView} className="course-card-btn">
         <Eye size={16} />
         <span>View Course</span>
-      </button>
-    </div>
-  );
-};
-
-/**
- * Saved Lesson Card Component
- */
-const SavedLessonCard = ({ lesson, onView, onDelete, isDeleting }) => {
-  return (
-    <div className="saved-lesson-card">
-      <div className="saved-lesson-header">
-        <div className="saved-lesson-info">
-          <h3 className="saved-lesson-title">{lesson.title}</h3>
-          <p className="saved-lesson-course">{lesson.courseTitle}</p>
-          {lesson.moduleName && (
-            <p className="saved-lesson-module">📖 {lesson.moduleName}</p>
-          )}
-        </div>
-        <button
-          onClick={onDelete}
-          disabled={isDeleting}
-          className="lesson-delete-btn"
-          title="Delete lesson"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
-
-      {lesson.objectives && lesson.objectives.length > 0 && (
-        <div className="saved-lesson-objectives">
-          <strong>Learning Goals:</strong>
-          <ul>
-            {lesson.objectives.slice(0, 2).map((obj, idx) => (
-              <li key={idx}>{obj}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="saved-lesson-stats">
-        <span className="stat">📝 {lesson.content?.length || 0} blocks</span>
-        <span className="stat">
-          ⏰ {new Date(lesson.createdAt).toLocaleDateString()}
-        </span>
-      </div>
-
-      <button onClick={onView} className="saved-lesson-btn">
-        <Eye size={16} />
-        <span>View Lesson</span>
       </button>
     </div>
   );

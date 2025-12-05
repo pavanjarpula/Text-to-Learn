@@ -1,9 +1,9 @@
-// backend/controllers/courseController.js - UPDATED WITH SAVE FIX
+// backend/controllers/courseController.js - FIXED WITH CORRECT IMPORTS
 
-const Course = require("../models/course");
-const Module = require("../models/Module");
-const Lesson = require("../models/Lesson");
-const User = require("../models/user");
+const Course = require("../models/Course"); // ✅ Capital C
+const Module = require("../models/Module"); // ✅ Capital M
+const Lesson = require("../models/Lesson"); // ✅ Capital L
+const User = require("../models/User"); // ✅ Capital U
 
 /**
  * 🔧 NEW: Save a complete course (POST /api/courses)

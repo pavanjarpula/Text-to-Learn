@@ -1,5 +1,5 @@
 const Module = require("../models/Module");
-const Course = require("../models/course");
+const Course = require("../models/Course");
 const Lesson = require("../models/Lesson");
 
 /**

@@ -1,6 +1,6 @@
 // backend/controllers/aiController.js - FIXED VERSION 2
 
-const Course = require("../models/course");
+const Course = require("../models/Course");
 const Module = require("../models/Module");
 const Lesson = require("../models/Lesson");
 const { generateCourse, generateLesson } = require("../services/aiService");

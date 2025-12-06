@@ -10,11 +10,25 @@ const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
 const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
 
-// ✅ Construct proper redirect URI with /callback
-const redirectUri =
-  process.env.NODE_ENV === "production"
-    ? `${window.location.origin}/callback` // Production: https://your-vercel-url.vercel.app/callback
-    : "http://localhost:3000/callback"; // Development: http://localhost:3000/callback
+// ✅ FIXED: Use explicit hardcoded values instead of window.location.origin
+// This is the key fix - Auth0 needs EXACT URLs it knows about
+const redirectUri = (() => {
+  // Local development
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    return "http://localhost:3000/callback";
+  }
+
+  // Vercel production
+  if (window.location.hostname.includes("vercel.app")) {
+    return `https://${window.location.hostname}/callback`;
+  }
+
+  // Fallback (shouldn't happen)
+  return "http://localhost:3000/callback";
+})();
 
 console.log("Auth0 Configuration:", {
   domain,
@@ -22,6 +36,8 @@ console.log("Auth0 Configuration:", {
   audience,
   redirectUri,
   environment: process.env.NODE_ENV,
+  hostname: window.location.hostname,
+  origin: window.location.origin,
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -34,6 +50,7 @@ root.render(
         redirect_uri: redirectUri, // ✅ NOW INCLUDES /callback
         audience: audience,
       }}
+      cacheLocation="localstorage"
     >
       <AppProvider>
         <App />

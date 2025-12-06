@@ -189,15 +189,28 @@
   cursor: not-allowed;
 }
 
+/* ========== SPINNER ANIMATION - FIXED ========== */
 .spinner-icon {
-  animation: spin 1s linear infinite;
+  display: inline-block !important;
+  animation: spin-animation 1s linear infinite !important;
+  transform-origin: center;
+  will-change: transform;
 }
 
-@keyframes spin {
-  from {
+@keyframes spin-animation {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  25% {
+    transform: rotate(90deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  75% {
+    transform: rotate(270deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
 }

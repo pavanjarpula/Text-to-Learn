@@ -25,10 +25,10 @@ const app = express();
 // ✅ UPDATED: Dynamic CORS Configuration (Production-Ready)
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN || "http://localhost:3000",
-  "http://localhost:5173", // Vite default
   "http://localhost:3000", // Create React App default
   "http://127.0.0.1:5173",
   "http://127.0.0.1:3000",
+  "https://text-to-learn-5v9z.vercel.app",
 ];
 
 // ✅ ADD: Your Vercel frontend URL when deployed

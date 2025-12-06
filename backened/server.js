@@ -22,16 +22,30 @@ const app = express();
 
 // ==================== MIDDLEWARE ====================
 
-// CORS Configuration
+// ✅ UPDATED: Dynamic CORS Configuration (Production-Ready)
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN || "http://localhost:3000",
+  "http://localhost:5173", // Vite default
+  "http://localhost:3000", // Create React App default
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+];
+
+// ✅ ADD: Your Vercel frontend URL when deployed
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
+// ✅ ADD: Your frontend production URL (if different from Vercel)
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+console.log("📋 CORS Origins Allowed:", allowedOrigins);
+
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_ORIGIN || "http://localhost:3000",
-      "http://localhost:5173", // Vite default
-      "http://localhost:3000", // Create React App default
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:3000",
-    ],
+    origin: allowedOrigins,
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -51,6 +65,7 @@ app.get("/", (req, res) => {
     message: "🚀 Text-to-Learn Backend API is running",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
@@ -58,6 +73,8 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    mongodb: "connected", // You could add actual DB health check here
   });
 });
 
@@ -74,6 +91,7 @@ app.use("/api/debug", debugRoutes); // 🆕 DEBUG ROUTES - FOR TESTING ONLY
 // ==================== DEBUG INFO ====================
 
 console.log("📋 Configuration loaded:");
+console.log("  - Environment:", process.env.NODE_ENV || "development");
 console.log("  - Auth0 Domain:", process.env.AUTH0_DOMAIN || "NOT SET");
 console.log("  - Auth0 Audience:", process.env.AUTH0_AUDIENCE || "NOT SET");
 console.log("  - MongoDB:", process.env.MONGO_URI ? "CONFIGURED" : "NOT SET");
@@ -89,7 +107,7 @@ console.log(
   "  - YouTube API:",
   process.env.YOUTUBE_API_KEY ? "CONFIGURED" : "NOT SET"
 );
-console.log("  - Client Origins: Configured");
+console.log("  - Client Origins: Configured (see above)");
 console.log("  - Debug Routes: ENABLED at /api/debug");
 
 // ==================== ERROR HANDLING ====================
@@ -109,14 +127,14 @@ const server = app.listen(PORT, () => {
     ╔════════════════════════════════════════╗
     ║  ✅ Backend Server Running             ║
     ║  🌐 Port: ${PORT}                      ║
-    ║  📍 URL: http://localhost:${PORT}      ║
+    ║  📍 Environment: ${process.env.NODE_ENV || "development"} ║
     ║  🔧 API: http://localhost:${PORT}/api  ║
-    ║                                        ║
+    ║                                         ║
     ║  📚 Features:                          ║
-    ║  🎬 YouTube: /api/enrichment/videos   ║
+    ║  🎬 YouTube: /api/enrichment/videos    ║
     ║  🌐 Hinglish: /api/enrichment/translate ║
-    ║  📄 PDF: /api/enrichment/export       ║
-    ║  🐛 Debug: /api/debug (DEV ONLY)      ║
+    ║  📄 PDF: /api/enrichment/export         ║
+    ║  🐛 Debug: /api/debug (DEV ONLY)        ║
     ╚════════════════════════════════════════╝
   `);
 });

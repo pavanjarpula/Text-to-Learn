@@ -10,14 +10,18 @@ const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
 const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
 
-// Simple redirect URI - matches Auth0 settings
-const redirectUri = "http://localhost:3000";
+// ✅ Smart redirect URI for both local and production
+const redirectUri =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : window.location.origin; // Uses current URL in production
 
-console.log("✅ Auth0 Initialized:", {
+console.log("✅ Auth0 Configured:", {
   domain,
   clientId,
   audience,
   redirectUri,
+  hostname: window.location.hostname,
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root"));

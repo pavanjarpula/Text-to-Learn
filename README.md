@@ -42,3 +42,148 @@ Text-to-Learn is a full-stack web application that transforms any topic into a s
 - **Database:** MongoDB Atlas
 
 ## 📋 Project Structure
+
+text-to-learn-backend/
+├── server.js
+│   ├── Initializes Express app
+│   ├── Configures middleware (CORS, JSON parsing)
+│   ├── Connects to MongoDB
+│   ├── Registers routes
+│   └── Starts server
+│
+├── config/
+│   └── db.js
+│       └── MongoDB connection logic
+│
+├── middlewares/
+│   ├── authMiddleware.js
+│   │   └── JWT verification using Auth0
+│   ├── attachUser.js
+│   │   └── Attaches authenticated user info to request
+│   └── errorMiddleware.js
+│       ├── Request logging
+│       ├── 404 handler
+│       └── Global error handler
+│
+├── models/
+│   ├── Course.js
+│   │   └── Course schema with modules and metadata
+│   ├── Module.js
+│   │   └── Module schema linked to courses
+│   ├── Lesson.js
+│   │   └── Lesson schema supporting content blocks & saves
+│   └── User.js
+│       └── Optional user model (Auth0 handles auth)
+│
+├── routes/
+│   ├── aiRoutes.js
+│   │   ├── Course generation
+│   │   └── Lesson generation
+│   ├── courseRoutes.js
+│   │   ├── CRUD operations for courses
+│   │   └── User-specific course access
+│   ├── moduleRoutes.js
+│   │   └── Manage course modules
+│   ├── lessonRoutes.js
+│   │   └── Lesson CRUD & save operations
+│   └── enrichment.js
+│       ├── YouTube video search
+│       ├── Hinglish translation
+│       ├── Audio generation
+│       └── PDF export
+│
+├── controllers/
+│   ├── aiController.js
+│   │   └── Handles AI-powered generation workflows
+│   ├── courseController.js
+│   │   └── Course business logic
+│   ├── moduleController.js
+│   │   └── Module management
+│   └── lessonController.js
+│       └── Lesson operations
+│
+├── services/
+│   ├── aiService.js
+│   │   └── LLM interaction and content generation
+│   ├── multilingualService.js
+│   │   └── Hinglish translation & TTS helpers
+│   ├── youtubeService.js
+│   │   └── YouTube Data API integration
+│   ├── pdfExportService.js
+│   │   └── Lesson & module PDF export
+│   ├── promptTemplates.js
+│   │   └── Structured AI prompt builders
+│   └── validator.js
+│       └── Validation & sanitization of AI outputs
+│
+├── utils/
+│   └── Helper utilities
+│
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
+
+text-to-learn-frontend/
+├── public/
+│   ├── index.html
+│   ├── favicon.ico
+│   └── manifest.json
+│
+├── src/
+│   ├── index.js
+│   │   └── App entry point with Auth0 provider
+│
+│   ├── App.jsx
+│   │   └── Root component handling global state & routing
+│
+│   ├── App.css
+│   │   └── Global styles
+│
+│   ├── components/
+│   │   ├── Layout.jsx
+│   │   │   └── Navbar + Sidebar wrapper
+│   │   ├── Navbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── ChatPrompt.jsx
+│   │   │   └── Topic input & course generation
+│   │   ├── CoursePreview.jsx
+│   │   │   └── Displays modules & lessons
+│   │   ├── LessonRenderer.jsx
+│   │   │   └── Renders lesson content blocks
+│   │   ├── HinglishTranslator.jsx
+│   │   ├── PDFExporter.jsx
+│   │   └── blocks/
+│   │       ├── HeadingBlock.jsx
+│   │       ├── ParagraphBlock.jsx
+│   │       ├── CodeBlock.jsx
+│   │       ├── VideoBlock.jsx
+│   │       └── MCQBlock.jsx
+│
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   │   └── Main course & lesson workflow
+│   │   ├── Profile.jsx
+│   │   │   └── Saved courses & lessons
+│   │   ├── Course.jsx
+│   │   └── Lesson.jsx
+│
+│   ├── hooks/
+│   │   ├── useLessonData.js
+│   │   ├── useFetch.js
+│   │   └── useSpeechSynthesis.js
+│
+│   ├── utils/
+│   │   └── api.js
+│   │       └── Centralized API calls
+│
+│   ├── context/
+│   │   └── (Reserved for future global state)
+│
+│   └── index.css
+│
+├── .env.example
+├── .gitignore
+├── package.json
+├── package-lock.json
+└── README.md

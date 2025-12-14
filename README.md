@@ -62,41 +62,71 @@ text-to-learn-backend/
 │
 ├── middlewares/
 │   ├── authMiddleware.js
+│   │   └── JWT verification using Auth0
 │   ├── attachUser.js
+│   │   └── Attaches authenticated user info to request
 │   └── errorMiddleware.js
+│       ├── Request logging
+│       ├── 404 handler
+│       └── Global error handler
 │
 ├── models/
 │   ├── Course.js
+│   │   └── Course schema with modules and metadata
 │   ├── Module.js
+│   │   └── Module schema linked to courses
 │   ├── Lesson.js
+│   │   └── Lesson schema supporting content blocks & saves
 │   └── User.js
+│       └── Optional user model (Auth0 handles authentication)
 │
 ├── routes/
 │   ├── aiRoutes.js
+│   │   ├── Course generation
+│   │   └── Lesson generation
 │   ├── courseRoutes.js
+│   │   └── CRUD operations for courses
 │   ├── moduleRoutes.js
+│   │   └── Manage course modules
 │   ├── lessonRoutes.js
+│   │   └── Lesson CRUD & save operations
 │   └── enrichment.js
+│       ├── YouTube video search
+│       ├── Hinglish translation
+│       ├── Audio generation
+│       └── PDF export
 │
 ├── controllers/
 │   ├── aiController.js
+│   │   └── AI-powered generation workflows
 │   ├── courseController.js
+│   │   └── Course business logic
 │   ├── moduleController.js
+│   │   └── Module management
 │   └── lessonController.js
+│       └── Lesson operations
 │
 ├── services/
 │   ├── aiService.js
+│   │   └── LLM interaction and content generation
 │   ├── multilingualService.js
+│   │   └── Hinglish translation & TTS helpers
 │   ├── youtubeService.js
+│   │   └── YouTube Data API integration
 │   ├── pdfExportService.js
+│   │   └── Lesson & module PDF export
 │   ├── promptTemplates.js
+│   │   └── Structured AI prompt builders
 │   └── validator.js
+│       └── Validation & sanitization of AI outputs
 │
 ├── utils/
+│   └── Helper utilities
 │
 ├── .env.example
 ├── .gitignore
 ├── package.json
+└── README.md
 
 
 
@@ -111,19 +141,44 @@ text-to-learn-frontend/
 │   ├── index.js
 │   ├── App.jsx
 │   ├── App.css
+│   ├── index.css
+│
 │   ├── components/
+│   │   ├── Layout.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── ChatPrompt.jsx
+│   │   ├── CoursePreview.jsx
+│   │   ├── LessonRenderer.jsx
+│   │   ├── HinglishTranslator.jsx
+│   │   ├── PDFExporter.jsx
+│   │   └── blocks/
+│   │       ├── HeadingBlock.jsx
+│   │       ├── ParagraphBlock.jsx
+│   │       ├── CodeBlock.jsx
+│   │       ├── VideoBlock.jsx
+│   │       └── MCQBlock.jsx
+│
 │   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── Profile.jsx
+│   │   ├── Course.jsx
+│   │   └── Lesson.jsx
+│
 │   ├── hooks/
+│   │   ├── useLessonData.js
+│   │   ├── useFetch.js
+│   │   └── useSpeechSynthesis.js
+│
 │   ├── utils/
+│   │   └── api.js
+│
 │   ├── context/
-│   └── index.css
+│
+│   └── assets/
 │
 ├── .env.example
 ├── .gitignore
 ├── package.json
 ├── package-lock.json
 └── README.md
-
-└── README.md
-
-

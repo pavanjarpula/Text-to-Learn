@@ -73,15 +73,14 @@ text-to-learn-backend/
 │   ├── Lesson.js
 │   │   └── Lesson schema supporting content blocks & saves
 │   └── User.js
-│       └── Optional user model (Auth0 handles auth)
+│       └── Optional user model (Auth0 handles authentication)
 │
 ├── routes/
 │   ├── aiRoutes.js
 │   │   ├── Course generation
 │   │   └── Lesson generation
 │   ├── courseRoutes.js
-│   │   ├── CRUD operations for courses
-│   │   └── User-specific course access
+│   │   └── CRUD operations for courses
 │   ├── moduleRoutes.js
 │   │   └── Manage course modules
 │   ├── lessonRoutes.js
@@ -94,7 +93,7 @@ text-to-learn-backend/
 │
 ├── controllers/
 │   ├── aiController.js
-│   │   └── Handles AI-powered generation workflows
+│   │   └── AI-powered generation workflows
 │   ├── courseController.js
 │   │   └── Course business logic
 │   ├── moduleController.js
@@ -135,51 +134,16 @@ text-to-learn-frontend/
 │   │   └── App entry point with Auth0 provider
 │
 │   ├── App.jsx
-│   │   └── Root component handling global state & routing
+│   │   └── Root component and global state
 │
 │   ├── App.css
 │   │   └── Global styles
 │
 │   ├── components/
-│   │   ├── Layout.jsx
-│   │   │   └── Navbar + Sidebar wrapper
-│   │   ├── Navbar.jsx
-│   │   ├── Sidebar.jsx
-│   │   ├── ChatPrompt.jsx
-│   │   │   └── Topic input & course generation
-│   │   ├── CoursePreview.jsx
-│   │   │   └── Displays modules & lessons
-│   │   ├── LessonRenderer.jsx
-│   │   │   └── Renders lesson content blocks
-│   │   ├── HinglishTranslator.jsx
-│   │   ├── PDFExporter.jsx
-│   │   └── blocks/
-│   │       ├── HeadingBlock.jsx
-│   │       ├── ParagraphBlock.jsx
-│   │       ├── CodeBlock.jsx
-│   │       ├── VideoBlock.jsx
-│   │       └── MCQBlock.jsx
-│
 │   ├── pages/
-│   │   ├── Home.jsx
-│   │   │   └── Main course & lesson workflow
-│   │   ├── Profile.jsx
-│   │   │   └── Saved courses & lessons
-│   │   ├── Course.jsx
-│   │   └── Lesson.jsx
-│
 │   ├── hooks/
-│   │   ├── useLessonData.js
-│   │   ├── useFetch.js
-│   │   └── useSpeechSynthesis.js
-│
 │   ├── utils/
-│   │   └── api.js
-│   │       └── Centralized API calls
-│
 │   ├── context/
-│   │   └── (Reserved for future global state)
-│
 │   └── index.css
 │
 ├── .env.example
@@ -187,3 +151,4 @@ text-to-learn-frontend/
 ├── package.json
 ├── package-lock.json
 └── README.md
+

@@ -43,6 +43,11 @@ Text-to-Learn is a full-stack web application that transforms any topic into a s
 
 ## 📋 Project Structure
 
+## 📁 Project Structure
+
+### Backend
+
+```text
 text-to-learn-backend/
 ├── server.js
 │   ├── Initializes Express app
@@ -57,71 +62,44 @@ text-to-learn-backend/
 │
 ├── middlewares/
 │   ├── authMiddleware.js
-│   │   └── JWT verification using Auth0
 │   ├── attachUser.js
-│   │   └── Attaches authenticated user info to request
 │   └── errorMiddleware.js
-│       ├── Request logging
-│       ├── 404 handler
-│       └── Global error handler
 │
 ├── models/
 │   ├── Course.js
-│   │   └── Course schema with modules and metadata
 │   ├── Module.js
-│   │   └── Module schema linked to courses
 │   ├── Lesson.js
-│   │   └── Lesson schema supporting content blocks & saves
 │   └── User.js
-│       └── Optional user model (Auth0 handles authentication)
 │
 ├── routes/
 │   ├── aiRoutes.js
-│   │   ├── Course generation
-│   │   └── Lesson generation
 │   ├── courseRoutes.js
-│   │   └── CRUD operations for courses
 │   ├── moduleRoutes.js
-│   │   └── Manage course modules
 │   ├── lessonRoutes.js
-│   │   └── Lesson CRUD & save operations
 │   └── enrichment.js
-│       ├── YouTube video search
-│       ├── Hinglish translation
-│       ├── Audio generation
-│       └── PDF export
 │
 ├── controllers/
 │   ├── aiController.js
-│   │   └── AI-powered generation workflows
 │   ├── courseController.js
-│   │   └── Course business logic
 │   ├── moduleController.js
-│   │   └── Module management
 │   └── lessonController.js
-│       └── Lesson operations
 │
 ├── services/
 │   ├── aiService.js
-│   │   └── LLM interaction and content generation
 │   ├── multilingualService.js
-│   │   └── Hinglish translation & TTS helpers
 │   ├── youtubeService.js
-│   │   └── YouTube Data API integration
 │   ├── pdfExportService.js
-│   │   └── Lesson & module PDF export
 │   ├── promptTemplates.js
-│   │   └── Structured AI prompt builders
 │   └── validator.js
-│       └── Validation & sanitization of AI outputs
 │
 ├── utils/
-│   └── Helper utilities
 │
 ├── .env.example
 ├── .gitignore
 ├── package.json
-└── README.md
+
+
+
 
 text-to-learn-frontend/
 ├── public/
@@ -131,14 +109,8 @@ text-to-learn-frontend/
 │
 ├── src/
 │   ├── index.js
-│   │   └── App entry point with Auth0 provider
-│
 │   ├── App.jsx
-│   │   └── Root component and global state
-│
 │   ├── App.css
-│   │   └── Global styles
-│
 │   ├── components/
 │   ├── pages/
 │   ├── hooks/
@@ -151,4 +123,7 @@ text-to-learn-frontend/
 ├── package.json
 ├── package-lock.json
 └── README.md
+
+└── README.md
+
 

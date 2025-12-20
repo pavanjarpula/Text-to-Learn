@@ -15,6 +15,14 @@ function App() {
   const [isViewingProfileLesson, setIsViewingProfileLesson] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // DEPLOYMENT FIX: Get correct redirect URI based on environment
+  const getRedirectUri = () => {
+    if (window.location.hostname === 'localhost') {
+      return 'http://localhost:3000';
+    }
+    return window.location.origin;
+  };
+
   // Show notification utility
   const showNotification = useCallback((message, type = 'info') => {
     console.log(`📢 ${type.toUpperCase()}: ${message}`);
@@ -50,10 +58,8 @@ function App() {
     }
   }, [courses, showNotification]);
 
-  // ISSUE #2 FIX: Clear activeLesson when selecting course to show preview
   const handleSelectCourse = useCallback((course) => {
     try {
-      // 🔒 LOCK: Don't allow course selection if viewing profile lesson
       if (isViewingProfileLesson) {
         console.log('🔒 LOCKED: Cannot select course while viewing profile lesson');
         return;
@@ -74,7 +80,7 @@ function App() {
       if (courseExists) {
         console.log('📚 Course exists in sidebar, activating');
         setActiveCourse(course);
-        setActiveLesson(null); // Clear lesson to show preview
+        setActiveLesson(null);
         setCourseSource('sidebar');
         setArchivedCourse(null);
       } else {
@@ -83,7 +89,7 @@ function App() {
           setArchivedCourse(activeCourse);
         }
         setActiveCourse(course);
-        setActiveLesson(null); // Clear lesson to show preview
+        setActiveLesson(null);
         setCourseSource('saved');
       }
     } catch (error) {
@@ -94,7 +100,6 @@ function App() {
 
   const handleSelectLesson = useCallback((lessonData) => {
     try {
-      // 🔒 LOCK: Don't allow lesson selection if viewing profile lesson
       if (isViewingProfileLesson) {
         console.log('🔒 LOCKED: Cannot select lesson while viewing profile lesson');
         return;
@@ -115,10 +120,8 @@ function App() {
     }
   }, [isViewingProfileLesson, showNotification]);
 
-  // ISSUE #3 FIX: Clear activeLesson when deleting active course
   const handleDeleteCourse = useCallback((courseId) => {
     try {
-      // 🔒 LOCK: Don't allow delete if viewing profile lesson
       if (isViewingProfileLesson) {
         console.log('🔒 LOCKED: Cannot delete course while viewing profile lesson');
         return;
@@ -127,7 +130,6 @@ function App() {
       console.log('🗑️ App - Deleting course:', courseId);
       setCourses(prev => prev.filter(c => c._id !== courseId));
       
-      // If deleting active course, reset all state
       if (activeCourse?._id === courseId) {
         console.log('🏠 Deleted active course, showing fresh homepage');
         setActiveCourse(null);
@@ -143,7 +145,6 @@ function App() {
   }, [activeCourse, isViewingProfileLesson, showNotification]);
 
   const handleBackToCourse = useCallback(() => {
-    // 🔒 LOCK: Don't allow back if viewing profile lesson
     if (isViewingProfileLesson) {
       console.log('🔒 LOCKED: Cannot go back while viewing profile lesson');
       return;
@@ -153,10 +154,8 @@ function App() {
     setActiveLesson(null);
   }, [isViewingProfileLesson]);
 
-  // ISSUE #1 FIX: Remove lock check from here - let it work always when not in profile lesson view
   const handleNewCourse = useCallback(() => {
     try {
-      // Check lock at App level but execute the reset
       if (isViewingProfileLesson) {
         console.log('🔒 LOCKED: Cannot create new course while viewing profile lesson');
         return;
@@ -174,12 +173,10 @@ function App() {
     }
   }, [isViewingProfileLesson, showNotification]);
 
-  // ISSUE #1 FIX: Ensure complete state reset when closing profile lesson
   const handleCloseProfileLesson = useCallback(() => {
     try {
       console.log('🔓 App - Closing profile lesson, unlocking navigation');
       
-      // Reset all state completely
       if (archivedCourse) {
         console.log('♻️ Restoring archived course:', archivedCourse.title);
         setActiveCourse(archivedCourse);
@@ -194,7 +191,6 @@ function App() {
         setArchivedCourse(null);
       }
       
-      // 🔓 UNLOCK: Must be called last and always
       setIsViewingProfileLesson(false);
       showNotification('Profile lesson closed', 'info');
     } catch (error) {
@@ -207,10 +203,8 @@ function App() {
     try {
       console.log('🔒 App - Viewing profile lesson:', lessonData?.lesson?.title);
       
-      // 🔒 LOCK: Set isViewingProfileLesson to true - blocks all operations
       setIsViewingProfileLesson(true);
       
-      // Archive current course if viewing different course
       if (activeCourse && !activeCourse._id?.includes(lessonData?.course?.title)) {
         setArchivedCourse(activeCourse);
       }
@@ -228,7 +222,7 @@ function App() {
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
-        redirect_uri: window.location.origin,
+        redirect_uri: getRedirectUri(),
         audience: process.env.REACT_APP_AUTH0_AUDIENCE,
       }}
     >

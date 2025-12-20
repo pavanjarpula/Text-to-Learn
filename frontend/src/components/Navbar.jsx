@@ -10,30 +10,57 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // FIX #2: Improved logout handler with proper navigation and config
+  // DEPLOYMENT FIX: Get correct return URL based on environment
+  const getLogoutReturnUrl = () => {
+    if (window.location.hostname === 'localhost') {
+      return 'http://localhost:3000';
+    }
+    return window.location.origin;
+  };
+
+  // FIXED: Improved logout handler for deployment
   const handleLogout = () => {
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
     
-    // Navigate to home first
-    navigate("/", { replace: true });
+    console.log('🚪 Logging out from:', window.location.origin);
     
-    // Then logout with proper configuration
-    logout({ 
-      returnTo: window.location.origin,
-      federated: false // Prevents federated logout issues
-    });
+    try {
+      // Use logoutParams for Auth0 SDK v2+
+      logout({ 
+        logoutParams: {
+          returnTo: getLogoutReturnUrl()
+        }
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback for older Auth0 SDK
+      logout({ 
+        returnTo: getLogoutReturnUrl()
+      });
+    }
   };
 
   const handleLogin = () => {
     setMobileMenuOpen(false);
-    loginWithRedirect();
+    console.log('🔐 Initiating login');
+    
+    loginWithRedirect({
+      authorizationParams: {
+        redirect_uri: getLogoutReturnUrl(),
+      }
+    });
   };
 
   const handleSignup = () => {
     setMobileMenuOpen(false);
+    console.log('📝 Initiating signup');
+    
     loginWithRedirect({
-      authorizationParams: { screen_hint: "signup" },
+      authorizationParams: {
+        screen_hint: "signup",
+        redirect_uri: getLogoutReturnUrl(),
+      }
     });
   };
 

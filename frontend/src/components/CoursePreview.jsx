@@ -201,4 +201,3 @@ const CoursePreview = ({ course, onLessonSelect }) => {
 export default CoursePreview;
 
 
-

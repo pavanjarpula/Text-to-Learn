@@ -1,18 +1,28 @@
-
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Menu, X, BookOpen, ChevronDown } from "lucide-react";
 import "./Navbar.css";
 
 const Navbar = () => {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // FIX #2: Improved logout handler with proper navigation and config
   const handleLogout = () => {
     setUserMenuOpen(false);
-    logout({ returnTo: window.location.origin });
+    setMobileMenuOpen(false);
+    
+    // Navigate to home first
+    navigate("/", { replace: true });
+    
+    // Then logout with proper configuration
+    logout({ 
+      returnTo: window.location.origin,
+      federated: false // Prevents federated logout issues
+    });
   };
 
   const handleLogin = () => {
@@ -181,22 +191,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -27,16 +27,15 @@ function App() {
       console.log('✅ App - Course generated:', course.title);
       setCourses(prev => [course, ...prev]);
       setActiveCourse(course);
+      setActiveLesson(null);
       setCourseSource('generated');
-      if (!isViewingProfileLesson) {
-        setArchivedCourse(null);
-      }
+      setArchivedCourse(null);
       showNotification(`Course "${course.title}" generated successfully!`, 'success');
     } catch (error) {
       console.error('❌ Error generating course:', error);
       showNotification('Failed to generate course', 'error');
     }
-  }, [isViewingProfileLesson, showNotification]);
+  }, [showNotification]);
 
   const handleSaveCourse = useCallback(async (course) => {
     try {
@@ -51,6 +50,7 @@ function App() {
     }
   }, [courses, showNotification]);
 
+  // ISSUE #2 FIX: Clear activeLesson when selecting course to show preview
   const handleSelectCourse = useCallback((course) => {
     try {
       // 🔒 LOCK: Don't allow course selection if viewing profile lesson
@@ -74,7 +74,7 @@ function App() {
       if (courseExists) {
         console.log('📚 Course exists in sidebar, activating');
         setActiveCourse(course);
-        setActiveLesson(null);
+        setActiveLesson(null); // Clear lesson to show preview
         setCourseSource('sidebar');
         setArchivedCourse(null);
       } else {
@@ -83,7 +83,7 @@ function App() {
           setArchivedCourse(activeCourse);
         }
         setActiveCourse(course);
-        setActiveLesson(null);
+        setActiveLesson(null); // Clear lesson to show preview
         setCourseSource('saved');
       }
     } catch (error) {
@@ -115,6 +115,7 @@ function App() {
     }
   }, [isViewingProfileLesson, showNotification]);
 
+  // ISSUE #3 FIX: Clear activeLesson when deleting active course
   const handleDeleteCourse = useCallback((courseId) => {
     try {
       // 🔒 LOCK: Don't allow delete if viewing profile lesson
@@ -125,12 +126,16 @@ function App() {
 
       console.log('🗑️ App - Deleting course:', courseId);
       setCourses(prev => prev.filter(c => c._id !== courseId));
+      
+      // If deleting active course, reset all state
       if (activeCourse?._id === courseId) {
+        console.log('🏠 Deleted active course, showing fresh homepage');
         setActiveCourse(null);
         setActiveLesson(null);
         setCourseSource(null);
+        setArchivedCourse(null);
+        showNotification('Course deleted successfully', 'success');
       }
-      showNotification('Course deleted successfully', 'success');
     } catch (error) {
       console.error('❌ Error deleting course:', error);
       showNotification('Failed to delete course', 'error');
@@ -148,9 +153,10 @@ function App() {
     setActiveLesson(null);
   }, [isViewingProfileLesson]);
 
+  // ISSUE #1 FIX: Remove lock check from here - let it work always when not in profile lesson view
   const handleNewCourse = useCallback(() => {
     try {
-      // 🔒 LOCK: Don't allow new course if viewing profile lesson
+      // Check lock at App level but execute the reset
       if (isViewingProfileLesson) {
         console.log('🔒 LOCKED: Cannot create new course while viewing profile lesson');
         return;
@@ -168,10 +174,12 @@ function App() {
     }
   }, [isViewingProfileLesson, showNotification]);
 
+  // ISSUE #1 FIX: Ensure complete state reset when closing profile lesson
   const handleCloseProfileLesson = useCallback(() => {
     try {
-      console.log('❌ App - Closing profile lesson');
+      console.log('🔓 App - Closing profile lesson, unlocking navigation');
       
+      // Reset all state completely
       if (archivedCourse) {
         console.log('♻️ Restoring archived course:', archivedCourse.title);
         setActiveCourse(archivedCourse);
@@ -179,13 +187,16 @@ function App() {
         setActiveLesson(null);
         setCourseSource('sidebar');
       } else {
+        console.log('🏠 No archived course, showing fresh homepage');
         setActiveCourse(null);
         setActiveLesson(null);
         setCourseSource(null);
+        setArchivedCourse(null);
       }
       
-      // 🔓 UNLOCK: Only set to false when explicitly closing
+      // 🔓 UNLOCK: Must be called last and always
       setIsViewingProfileLesson(false);
+      showNotification('Profile lesson closed', 'info');
     } catch (error) {
       console.error('❌ Error closing profile lesson:', error);
       showNotification('Failed to close profile lesson', 'error');
@@ -194,9 +205,9 @@ function App() {
 
   const handleViewProfileLesson = useCallback((lessonData) => {
     try {
-      console.log('👁️ App - Viewing profile lesson:', lessonData?.lesson?.title);
+      console.log('🔒 App - Viewing profile lesson:', lessonData?.lesson?.title);
       
-      // 🔒 LOCK: Set isViewingProfileLesson to true - blocks all other operations
+      // 🔒 LOCK: Set isViewingProfileLesson to true - blocks all operations
       setIsViewingProfileLesson(true);
       
       // Archive current course if viewing different course
